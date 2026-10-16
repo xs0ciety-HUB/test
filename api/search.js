@@ -1,5 +1,8 @@
 // api/search.js
+import { enforceRateLimit } from '../lib/rate-limit.js';
 export default async function handler(req, res) {
+  if (!(await enforceRateLimit(req, res, { name: 'search', limit: 40, windowSeconds: 60 }))) return;
+
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ success: false, error: "Method not allowed" });
   const { q, client_id, type = "tracks", playlist_id } = req.query;

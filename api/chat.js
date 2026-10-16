@@ -56,11 +56,28 @@ const RATE_LIMIT_WINDOW_MS = 10_000;
 const RATE_LIMIT_MAX = 8;
 const rateMap = new Map();
 
-function isRateLimited(key) {
+async function isRateLimited(key) {
+  // Shared, cross-instance limiter when Upstash KV/Redis is configured.
+  if (useKV) {
+    const bucket = Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS);
+    const safeKey = String(key).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
+    const redisKey = `soundpulse:rl:chat:${safeKey}:${bucket}`;
+    try {
+      const count = Number(await kvCmd("INCR", redisKey));
+      if (count === 1) await kvCmd("EXPIRE", redisKey, 15);
+      return count > RATE_LIMIT_MAX;
+    } catch (err) {
+      // Do not silently disable all protection if Redis is configured but unavailable.
+      console.error("[chat-rate-limit] shared limiter failed", err.message);
+      return true;
+    }
+  }
+  // Best-effort fallback only; not consistent across Vercel serverless instances.
   const now = Date.now();
   const entry = rateMap.get(key);
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
     rateMap.set(key, { windowStart: now, count: 1 });
+    if (rateMap.size > 5000) rateMap.clear();
     return false;
   }
   entry.count += 1;
@@ -139,7 +156,7 @@ export default async function handler(req, res) {
     if (!session) {
       return res.status(401).json({ success: false, code: "AUTH", error: "Login dengan Google dulu untuk ikut chat" });
     }
-    if (isRateLimited(session.uid)) {
+    if (await isRateLimited(session.uid)) {
       return res.status(429).json({ success: false, error: "Terlalu banyak request, coba lagi sebentar" });
     }
 

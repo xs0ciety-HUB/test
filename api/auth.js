@@ -8,6 +8,7 @@
 //   SESSION_SECRET   = string acak panjang untuk tanda tangan cookie
 //   ADMIN_EMAILS     = (opsional) email admin, pisah koma -> dapat badge "Dev"
 
+import { enforceRateLimit } from '../lib/rate-limit.js';
 import { parseCookies, appendSetCookie, serializeCookie } from "../lib/cookies.js";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession, readSession } from "../lib/session.js";
 
@@ -16,6 +17,8 @@ function publicUser(s) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'POST' && !(await enforceRateLimit(req, res, { name: 'auth', limit: 10, windowSeconds: 60 }))) return;
+
   res.setHeader("Cache-Control", "no-store");
   const clientId = process.env.GOOGLE_CLIENT_ID || null;
 

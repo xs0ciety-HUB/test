@@ -1,19 +1,22 @@
 // api/dl.js  (file BARU, tidak menggantikan apa pun)
 // Proxy byte-stream untuk unduhan offline: dipakai hanya kalau browser tidak bisa mengambil
 // segmen audio langsung dari CDN SoundCloud (CORS). Hanya host SoundCloud yang diizinkan.
+import { enforceRateLimit } from '../lib/rate-limit.js';
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36";
 const first = v => Array.isArray(v) ? v[0] : v;
 
 function allowed(url) {
   try {
     const u = new URL(url);
-    if (u.protocol !== "https:") return null;
+    if (u.protocol !== "https:" || u.username || u.password || (u.port && u.port !== "443")) return null;
     if (/(^|\.)(sndcdn\.com|soundcloud\.cloud)$/i.test(u.hostname)) return u;
     return null;
   } catch { return null; }
 }
 
 export default async function handler(req, res) {
+  if (!(await enforceRateLimit(req, res, { name: 'download', limit: 30, windowSeconds: 60 }))) return;
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Range");

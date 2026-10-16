@@ -6,6 +6,7 @@
 // ("Artis - Judul (Official Video) ft. X"), jadi dibersihkan dan dicoba
 // dengan beberapa kombinasi artis/judul sebelum menyerah.
 
+import { enforceRateLimit } from '../lib/rate-limit.js';
 const UA = "SoundPulse/2.0 (https://soundpulse.duckdns.org)";
 const TIMEOUT = 6000;
 
@@ -231,6 +232,8 @@ async function viaManual(q, duration) {
 }
 
 export default async function handler(req, res) {
+  if (!(await enforceRateLimit(req, res, { name: 'lyrics', limit: 30, windowSeconds: 60 }))) return;
+
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(200).end();
