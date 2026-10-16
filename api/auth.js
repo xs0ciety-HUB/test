@@ -37,13 +37,23 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "Token tidak valid" });
       }
 
-      const r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(credential));
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      let r;
+      try {
+        r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(credential), {
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (!r.ok) return res.status(401).json({ success: false, error: "Token Google ditolak" });
       const info = await r.json();
 
       const issOk = info.iss === "accounts.google.com" || info.iss === "https://accounts.google.com";
       const notExpired = Number(info.exp) * 1000 > Date.now();
-      if (info.aud !== clientId || !issOk || !notExpired || !info.sub) {
+      if (info.aud !== clientId || !issOk || !notExpired || typeof info.sub !== "string" || !info.sub || info.sub.length > 255) {
         return res.status(401).json({ success: false, error: "Token Google tidak valid" });
       }
 
