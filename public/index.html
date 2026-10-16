@@ -1,0 +1,3261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="google-site-verification" content="D1oUHv6dGj1dX7cihsmCFHur-ww9WxDmfzoywawpfPI" />
+<meta name="theme-color" content="#121212">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SoundPulse</title>
+
+<!-- SEO -->
+<meta name="description" content="SoundPulse — Streaming musik gratis dengan lirik sinkron & chat global bareng pendengar lain. Dengarkan lagu favoritmu kapan saja, di mana saja.">
+<meta name="keywords" content="SoundPulse, streaming musik, musik gratis, lirik lagu, chat musik, download lagu">
+<meta name="author" content="xs0ciety HUB">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://soundpulse.duckdns.org/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="SoundPulse — Streaming Musik dengan Lirik & Chat">
+<meta property="og:description" content="Dengerin lagu favoritmu sambil ngobrol bareng pendengar lain. Gratis, tanpa ribet.">
+<meta property="og:url" content="https://soundpulse.duckdns.org/">
+<meta property="og:image" content="https://soundpulse.duckdns.org/android-chrome-512x512.png">
+<meta property="og:site_name" content="SoundPulse">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SoundPulse — Streaming Musik dengan Lirik & Chat">
+<meta name="twitter:description" content="Dengerin lagu favoritmu sambil ngobrol bareng pendengar lain.">
+<meta name="twitter:image" content="https://soundpulse.duckdns.org/android-chrome-512x512.png">
+
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>window.lucide = window.lucide || { createIcons: function(){} };</script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="/soundpulse-api-client.js"></script>
+<style>
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  html, body { height: 100%; overflow-x: hidden; }
+  body {
+    background: #0b0e12;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 160px;
+  }
+  ::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  .grad-bg {
+    background:
+      radial-gradient(circle at 20% 0%, rgba(45,160,145,.13), transparent 40%),
+      radial-gradient(circle at 80% 10%, rgba(85,130,190,.10), transparent 45%),
+      radial-gradient(circle at 50% 100%, rgba(45,160,145,.08), transparent 60%),
+      #0b0e12;
+  }
+
+  .accent-bg { background: linear-gradient(135deg, #328f83 0%, #376d91 100%); }
+  .accent-text { color: #79c9b8; }
+  .accent-soft { background: rgba(65,157,140,.12); border: 1px solid rgba(65,157,140,.26); }
+
+  .glass {
+    background: rgba(10,6,18,.82);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+  }
+
+  .tap:active { transform: scale(.975); transition: transform .1s ease; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .fadeUp { animation: fadeUp .35s cubic-bezier(.22,.9,.3,1) backwards; }
+
+  @keyframes skel { 0%,100% { opacity: .35; } 50% { opacity: .7; } }
+  .skeleton { background: rgba(255,255,255,.06); animation: skel 1.4s ease-in-out infinite; border-radius: 14px; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 22px; height: 22px;
+    border: 2.5px solid rgba(255,255,255,.12);
+    border-top-color: #328f83;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .cover-grad::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.7) 100%);
+    border-radius: inherit; pointer-events: none;
+  }
+
+  .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+
+  .full-player {
+    position: fixed; inset: 0; z-index: 200;
+    transform: translateY(100%);
+    transition: transform .4s cubic-bezier(.22,.9,.3,1);
+    will-change: transform;
+    overflow: hidden;
+  }
+  .full-player.show { transform: translateY(0); }
+
+  .ambient-blur {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    filter: blur(80px) saturate(180%);
+    transform: scale(1.4);
+    opacity: .55;
+  }
+
+  .progress-line { transition: width .15s linear; }
+
+
+
+  .pill-bar { scroll-snap-type: x proximity; }
+  .pill-bar > * { scroll-snap-align: start; }
+
+  .navbtn { transition: color .2s ease, transform .15s ease; }
+  .navbtn:active { transform: scale(.92); }
+  .nav-active { color: #79c9b8; }
+  .nav-active i { filter: drop-shadow(0 0 10px rgba(192,132,252,.7)); }
+  .nav-active .nav-dot { opacity: 1; transform: translateX(-50%) scale(1); }
+  .nav-dot {
+    position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%) scale(0);
+    width: 4px; height: 4px; border-radius: 9999px; background: #79c9b8;
+    opacity: 0; transition: all .2s ease;
+    box-shadow: 0 0 8px rgba(192,132,252,.9);
+  }
+
+  .chat-input-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+    padding: 10px 12px max(env(safe-area-inset-bottom), 10px);
+    background: rgba(10,6,18,.92);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,.06);
+  }
+
+  input[type=range].vol {
+    -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 9999px;
+    background: rgba(255,255,255,.15);
+    outline: none; width: 100%;
+  }
+  input[type=range].vol::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; cursor: pointer;
+  }
+  input[type=range].vol::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: none; cursor: pointer;
+  }
+
+  input[type=range].prog {
+    -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 9999px;
+    background: rgba(255,255,255,.15);
+    outline: none; width: 100%;
+  }
+  input[type=range].prog::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(168,85,247,.25);
+  }
+  input[type=range].prog::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; border: none; cursor: pointer;
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: overlayIn .25s ease;
+  }
+  .modal-card { animation: modalIn .35s cubic-bezier(.22,.9,.3,1); }
+
+
+  .lyric-line {
+    transition: color .3s ease, transform .3s ease, opacity .45s ease, filter .45s ease;
+    color: rgba(255,255,255,.35);
+    font-size: 17px;
+    line-height: 1.7;
+    padding: 6px 0;
+    font-weight: 600;
+  }
+  .lyric-line.active {
+    color: #fff;
+    transform: scale(1.05);
+    text-shadow: 0 0 20px rgba(168,85,247,.5);
+  }
+  .lyric-scroll {
+    max-height: 340px;
+    overflow-y: auto;
+    position: relative;
+    scroll-behavior: auto;
+    overscroll-behavior: contain;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 15%, #000 85%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, #000 15%, #000 85%, transparent 100%);
+    padding: 30px 8px;
+  }
+
+  .song-row {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .song-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  @media (max-width: 380px) {
+    .song-actions button { width: 30px; height: 30px; }
+  }
+
+  /* Tampilan Baru */
+  :root { --a1:#d946ef; --a2:#376d91; --a3:#f472b6; }
+  body { background:#09090b; }
+  .grad-bg {
+    background:
+      radial-gradient(ellipse 80% 38% at 50% 0%, rgba(168,40,200,.22), transparent 70%),
+      radial-gradient(ellipse 70% 30% at 50% 100%, rgba(236,72,153,.10), transparent 70%),
+      #09090b;
+  }
+  body::before {
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size:34px 34px;
+    -webkit-mask-image: linear-gradient(180deg,#000,transparent 80%); mask-image: linear-gradient(180deg,#000,transparent 80%);
+  }
+  #app { position:relative; z-index:1; }
+  .accent-bg { background: linear-gradient(135deg, var(--a1), var(--a2)); }
+  .accent-text { color: var(--a3); }
+  .grad-text { background: linear-gradient(90deg, var(--a1), var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .spinner { border-top-color: var(--a1); }
+  .navbtn.nav-active:not(.fab-profile) { color: var(--a3) !important; }
+  .navbtn.nav-active svg { filter: drop-shadow(0 0 8px var(--a3)); }
+  .nav-dot { background: var(--a3); box-shadow: 0 0 8px var(--a3); bottom:2px; }
+
+  .card { background:#111113; border:1px solid rgba(255,255,255,.07); border-radius:22px; }
+  .page-head {
+    position:sticky; top:0; z-index:30; padding: max(env(safe-area-inset-top),30px) 20px 14px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--a1) 32%, #09090b), rgba(9,9,11,.92));
+    border-bottom:1px solid rgba(255,255,255,.08); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  }
+  .page-head h1 { font-size:34px; line-height:1.1; font-weight:800; letter-spacing:-.02em; margin-top:34px; }
+  .row-k { color:rgba(255,255,255,.55); } .row-v { font-weight:600; }
+  .fav-box { background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:14px 16px; font-size:15.5px; font-weight:600; }
+  .wide-btn { width:100%; padding:19px 0; border-radius:20px; background:#101012; border:1px solid rgba(255,255,255,.07);
+    font-size:16px; font-weight:700; color:#f4eae4; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+  .field { width:100%; background:#1a1a1d; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:15px 16px; font-size:15px; color:#fff; }
+  .field:focus { outline:none; border-color: color-mix(in srgb, var(--a1) 60%, transparent); }
+
+  .nav-pill { position:relative; display:grid; grid-template-columns:repeat(7,1fr); align-items:center; justify-items:center; height:68px;
+    border-radius:9999px; background:rgba(16,12,20,.93); border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 12px 40px -10px #000; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+  .nav-item { position:relative; width:44px; height:44px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.5); }
+  .fab-center { width:76px; height:76px; border-radius:9999px; display:flex; align-items:center; justify-content:center; color:#fff;
+    background: linear-gradient(135deg, var(--a1), var(--a2)); border:7px solid #09090b; transform: translateY(-24px);
+    box-shadow: 0 0 30px 2px color-mix(in srgb, var(--a1) 55%, transparent); }
+  .fab-profile { width:56px; height:56px; border-radius:9999px; display:flex; align-items:center; justify-content:center; color:#fff;
+    background: linear-gradient(135deg, var(--a1), var(--a2)); transform: translateY(-16px);
+    box-shadow: 0 8px 24px -6px color-mix(in srgb, var(--a1) 60%, transparent); }
+  .fab-profile.nav-active { box-shadow: 0 0 0 3px rgba(255,255,255,.28), 0 8px 24px -6px var(--a1); }
+
+  .mini-card { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:24px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--a2) 20%, #15111a), #15111a 70%);
+    border:1px solid color-mix(in srgb, var(--a2) 32%, transparent); box-shadow:0 12px 40px -8px rgba(0,0,0,.9);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .mini-btn { width:34px; height:34px; border-radius:9999px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.85); }
+  .mini-play { width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center; color:#fff;
+    border:1.5px solid rgba(255,255,255,.28); background:rgba(255,255,255,.06); }
+
+  .full-player { border-radius:34px 34px 0 0; }
+  .rnd-btn { width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.8); }
+  .act-btn { width:52px; height:52px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); }
+  .act-btn.dl-on { background:rgba(16,185,129,.16); border-color:rgba(16,185,129,.55); }
+  .play-big { width:92px; height:92px; border-radius:9999px; display:flex; align-items:center; justify-content:center; color:#fff;
+    background: linear-gradient(135deg, var(--a1), var(--a2)); box-shadow:0 10px 40px -4px color-mix(in srgb, var(--a1) 70%, transparent); }
+  input[type=range].prog { height:5px; background: linear-gradient(90deg, var(--a3) var(--pct,0%), rgba(255,255,255,.18) var(--pct,0%)); }
+  input[type=range].prog::-webkit-slider-thumb { width:16px; height:16px; box-shadow:0 2px 8px rgba(0,0,0,.5); }
+  input[type=range].vol { height:5px; background: linear-gradient(90deg, #fff var(--pct,100%), rgba(255,255,255,.18) var(--pct,100%)); }
+  .lyric-line { font-size:26px; font-weight:800; line-height:1.22; padding:10px 6px; letter-spacing:-.015em; text-align:center; color:rgba(255,255,255,.3); }
+  .lyric-line.near { color:rgba(255,255,255,.42); }
+  .lyric-line.far { filter:blur(1.6px); opacity:.55; }
+  .lyric-line.active { transform:none; text-shadow:none; color:transparent;
+    background: linear-gradient(90deg, #fff var(--p,0%), rgba(255,255,255,.32) var(--p,0%)); -webkit-background-clip:text; background-clip:text; }
+  .lyric-line.lyric-gap { font-size:15px; letter-spacing:.55em; line-height:1; padding:12px 6px; font-weight:700; }
+  .lyric-scroll { max-height:300px; }
+  .theme-swatch { border:2px solid transparent; border-radius:18px; padding:8px; background:rgba(255,255,255,.04); text-align:center; }
+  .theme-swatch.on { border-color:#fff; }
+
+  .nav-pill .navbtn.nav-item { transition: transform .32s cubic-bezier(.34,1.56,.64,1), width .25s ease, height .25s ease, background .25s ease, box-shadow .25s ease, color .2s ease; }
+  .nav-pill .navbtn.nav-item.nav-active {
+    width:56px; height:56px; border-radius:9999px; transform: translateY(-18px);
+    background: linear-gradient(135deg, var(--a1), var(--a2)); color:#fff !important;
+    box-shadow: 0 0 0 5px rgba(9,9,11,.92), 0 10px 26px -6px color-mix(in srgb, var(--a1) 70%, transparent);
+  }
+  .nav-pill .navbtn.nav-item.nav-active svg { filter:none; }
+  .nav-pill .navbtn.nav-item.nav-active .nav-dot { display:none; }
+  .nav-pill .navbtn.nav-item.nav-active:active { transform: translateY(-18px) scale(.94); }
+
+  /* Chat ala WhatsApp */
+  .msg-row { display:flex; gap:8px; align-items:flex-start; }
+  .msg-row.me { justify-content:flex-end; }
+  .msg-av { width:34px; flex-shrink:0; }
+  .bubble-wa {
+    position:relative; padding:7px 10px 6px; border-radius:16px; font-size:14px; line-height:1.38;
+    word-break:break-word; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  }
+  .bubble-wa::after { content:""; display:block; clear:both; }
+  .msg-row.me .bubble-wa { max-width:78%; background:linear-gradient(135deg, var(--a1), var(--a2)); }
+  .msg-row.me .bubble-wa.first { border-top-right-radius:5px; }
+  .msg-row.other .bubble-wa { background:#1b1b1f; border:1px solid rgba(255,255,255,.07); }
+  .msg-row.other .bubble-wa.first { border-top-left-radius:5px; }
+  .msg-text { white-space:pre-wrap; }
+  .msg-meta { float:right; margin:7px 0 -2px 12px; font-size:10px; color:rgba(255,255,255,.55); }
+  .bubble-wa .chat-img { display:block; max-width:100%; max-height:280px; border-radius:12px; margin-bottom:4px; cursor:zoom-in; }
+  .reply-quote { border-left:3px solid rgba(255,255,255,.5); background:rgba(0,0,0,.25); border-radius:10px; padding:5px 9px; margin-bottom:5px; cursor:pointer; }
+  .rq-name { font-size:11px; font-weight:700; }
+  .rq-text { font-size:11.5px; color:rgba(255,255,255,.65); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .bubble-wa.flash { animation: bubbleFlash 1.1s ease; }
+  @keyframes bubbleFlash { 0% { box-shadow:0 0 0 4px rgba(255,255,255,.55); } 100% { box-shadow:0 0 0 0 rgba(255,255,255,0); } }
+
+  /* SoundPulse: lebih tenang, rapat, dan terasa seperti pemutar musik sungguhan. */
+  :root { --a1:#1ed760; --a2:#1db954; --a3:#1ed760; }
+  body { background:#121212; }
+  .grad-bg { background:#121212; }
+  body::before { display:none; }
+  .accent-bg { background:var(--a1); color:#071109; }
+  .accent-text { color:var(--a1); }
+  .grad-text { color:#fff; background:none; -webkit-text-fill-color:#fff; }
+  .nav-active { color:var(--a1); }
+  .navbtn.nav-active svg { filter:none; }
+  .navbtn.nav-active:not(.fab-profile) { color:var(--a1) !important; }
+  .nav-dot { background:var(--a1); box-shadow:none; }
+  .card { background:#181818; border:1px solid rgba(255,255,255,.07); border-radius:16px; }
+  .nav-pill { background:rgba(18,18,18,.97); border-radius:18px; box-shadow:0 8px 28px rgba(0,0,0,.42); }
+  .fab-center, .fab-profile { background:var(--a1); box-shadow:none; }
+  .fab-center { border-color:#121212; }
+  .nav-pill .navbtn.nav-item.nav-active { background:var(--a1); box-shadow:0 0 0 4px #121212; }
+  .mini-card { background:#242424; border:1px solid rgba(255,255,255,.08); box-shadow:0 8px 28px rgba(0,0,0,.4); }
+  .play-big { background:var(--a1); color:#071109; box-shadow:none; }
+  .accent-soft { background:rgba(30,215,96,.1); border-color:rgba(30,215,96,.2); }
+  .theme-swatch.on { border-color:var(--a1); }
+  .search-playlist-card { background:#181818; border:1px solid rgba(255,255,255,.07); border-radius:14px; }
+  .playlist-row { transition:background .18s ease; }
+  .playlist-row:hover { background:rgba(255,255,255,.06); }
+  #playlistModal input { color:#fff; }
+  .local-playlist-track { background:transparent; border-color:transparent; border-radius:12px; }
+  @media (max-width:420px) {
+    .song-row { grid-template-columns:48px minmax(0,1fr) auto; gap:9px; }
+    .song-row > div:first-child { width:48px; height:48px; }
+    .song-actions { gap:0; }
+    .song-actions button { width:30px; height:30px; }
+  }
+</style>
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "SoundPulse",
+  "url": "https://soundpulse.duckdns.org/",
+  "description": "Streaming musik dengan lirik sinkron & chat global bareng pendengar lain.",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Web, Android, iOS",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "IDR"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "xs0ciety HUB"
+  },
+  "image": "https://soundpulse.duckdns.org/android-chrome-512x512.png"
+}
+</script>
+
+<script>
+const THEMES = {
+  magenta:["#d946ef","#be185d","#f472b6","Pink"],
+  violet: ["#4C1D95","#6D28D9","#8B5CF6","Ungu"],
+  blue:["#3b82f6","#06b6d4","#60a5fa","Biru"],
+  green:["#1ed760","#15803d","#a7f3d0","Hijau"],
+  orange:["#f97316","#eab308","#fb923c","Oranye"],
+  red:["#ef4444","#f97316","#f87171","Merah"]
+};
+function applyTheme(id){
+  const t = THEMES[id] || THEMES.green;
+  const r = document.documentElement.style;
+  r.setProperty("--a1",t[0]); r.setProperty("--a2",t[1]); r.setProperty("--a3",t[2]);
+  try { localStorage.setItem("sp_theme", id); } catch {}
+  document.querySelectorAll(".theme-swatch").forEach(el => el.classList.toggle("on", el.dataset.t === id));
+}
+function openTheme(){
+  const cur = (function(){ try { return localStorage.getItem("sp_theme") || "green"; } catch { return "green"; } })();
+  document.getElementById("themeGrid").innerHTML = Object.entries(THEMES).map(([id,t]) =>
+    `<button class="theme-swatch tap ${id===cur?'on':''}" data-t="${id}" onclick="applyTheme('${id}')">
+       <span class="block h-[46px] rounded-xl" style="background:linear-gradient(135deg,${t[0]},${t[1]})"></span>
+       <span class="block text-[11.5px] font-semibold mt-2">${t[3]}</span></button>`).join("");
+  document.getElementById("themeModal").classList.remove("hidden");
+}
+function closeTheme(){ document.getElementById("themeModal").classList.add("hidden"); }
+function skipBy(sec){
+  const a = document.getElementById("audioEngine");
+  if (!a || !a.duration || !isFinite(a.duration)) return;
+  a.currentTime = Math.max(0, Math.min(a.duration, a.currentTime + sec));
+}
+try { applyTheme(localStorage.getItem("sp_theme") || "green"); } catch {}
+</script>
+<script>
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); window.__bip = e; });
+window.addEventListener("appinstalled", () => { window.__bip = null; });
+function refreshOfflineCount(){
+  const el = document.getElementById("offlineCount");
+  if (el && typeof state !== "undefined") el.textContent = state.downloaded.length + " lagu";
+}
+function offOpen(){
+  return new Promise((res, rej) => {
+    const q = indexedDB.open("sp_offline", 1);
+    q.onupgradeneeded = () => q.result.createObjectStore("audio");
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+}
+async function offTx(mode, fn){
+  const db = await offOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction("audio", mode);
+    const r = fn(tx.objectStore("audio"));
+    tx.oncomplete = () => res(r && r.result !== undefined ? r.result : null);
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
+  });
+}
+const offGet = (id) => offTx("readonly", st => st.get(String(id)));
+const offPut = (id, blob) => offTx("readwrite", st => st.put(blob, String(id)));
+const offDel = (id) => offTx("readwrite", st => st.delete(String(id)));
+let offUrl = null;
+
+async function fetchAudioBlob(url, onProgress){
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const type = r.headers.get("content-type") || "audio/mpeg";
+  if (/json|html|text/i.test(type)) throw new Error("Respon bukan audio");
+  const total = +r.headers.get("content-length") || 0;
+  const reader = r.body.getReader();
+  const chunks = []; let got = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value); got += value.length;
+    if (total && onProgress) onProgress(got / total);
+  }
+  const blob = new Blob(chunks, { type });
+  if (blob.size < 50000) throw new Error("File terlalu kecil");
+  return blob;
+}
+
+window.addEventListener("load", async () => {
+  try {
+    if (!navigator.onLine && typeof switchView === "function") switchView("offline");
+    if (!window.indexedDB || typeof state === "undefined") return;
+    const keep = [];
+    for (const d of state.downloaded) { if (await offGet(d.id)) keep.push(d); }
+    if (keep.length !== state.downloaded.length) {
+      state.downloaded = keep;
+      localStorage.setItem("sp_downloaded", JSON.stringify(keep));
+      if (state.view === "offline" && typeof renderOffline === "function") renderOffline();
+    }
+    refreshOfflineCount();
+  } catch {}
+});
+</script>
+</head>
+<body class="grad-bg min-h-screen">
+
+<div id="app">
+
+  <noscript>
+    <div style="padding:40px;text-align:center;font-family:sans-serif;color:#fff">
+      <h1>SoundPulse — Streaming Musik dengan Lirik &amp; Chat</h1>
+      <p>SoundPulse adalah platform streaming musik gratis dengan lirik sinkron dan chat global bareng pendengar lain. Aktifkan JavaScript untuk mulai mendengarkan.</p>
+    </div>
+  </noscript>
+
+  <!-- HOME -->
+  <section id="view-home" class="view max-w-[640px] mx-auto px-4 pt-6">
+    <div class="flex items-start justify-between mb-5">
+      <div>
+        <p class="text-[11px] font-medium text-white/45 mb-[6px]">Dengerin yang kamu suka</p>
+        <h1 class="text-[26px] leading-none font-extrabold tracking-tight text-white">SoundPulse</h1>
+      </div>
+      <button onclick="switchView('chat')" class="accent-bg h-[46px] pl-[14px] pr-[18px] rounded-full flex items-center gap-2 font-bold text-[14px] text-white tap shadow-lg" style="box-shadow:0 6px 20px rgba(168,85,247,.35)" aria-label="Chat Global">
+        <i data-lucide="message-circle" class="w-[24px] h-[24px]"></i><span>Chat</span>
+      </button>
+    </div>
+
+    <div class="-mx-4 px-4 mb-6 flex gap-[6px] overflow-x-auto no-scrollbar pill-bar" id="genrePills"></div>
+
+    <section class="mb-7">
+      <div class="flex items-center gap-[10px] mb-3">
+        <div class="w-[26px] h-[26px] rounded-full accent-soft flex items-center justify-center">
+          <i data-lucide="history" class="w-[13px] h-[13px] accent-text"></i>
+        </div>
+        <h2 class="text-[14.5px] font-bold">Terakhir Diputar</h2>
+      </div>
+      <div id="recentCard"></div>
+    </section>
+
+    <section class="mb-7">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-[10px]">
+          <div class="w-[26px] h-[26px] rounded-full accent-soft flex items-center justify-center">
+            <i data-lucide="zap" class="w-[13px] h-[13px] accent-text"></i>
+          </div>
+          <h2 id="picksTitle" class="text-[14.5px] font-bold">Buat kamu</h2>
+        </div>
+        <button onclick="reloadQuickPicks()" class="text-[11px] text-white/40 hover:text-[#79c9b8] flex items-center gap-[4px]">
+          Refresh <i data-lucide="refresh-cw" class="w-[11px] h-[11px]"></i>
+        </button>
+      </div>
+      <div id="quickPicksGrid" class="space-y-2">
+        <div class="text-white/35 text-[12px] py-8 text-center">Memuat lagu...</div>
+      </div>
+    </section>
+
+    <section class="mb-7">
+      <div class="flex items-center gap-[10px] mb-3">
+        <div class="w-[26px] h-[26px] rounded-full accent-soft flex items-center justify-center">
+          <i data-lucide="disc-3" class="w-[13px] h-[13px] accent-text"></i>
+        </div>
+        <h2 class="text-[14.5px] font-bold">Playlist pilihan</h2>
+      </div>
+      <div id="playlistsRow" class="-mx-4 px-4 flex gap-[10px] overflow-x-auto no-scrollbar pb-1">
+        <div class="shrink-0 w-[140px]"><div class="w-[140px] h-[140px] skeleton"></div><div class="h-[14px] mt-2 skeleton" style="width:80%"></div></div>
+        <div class="shrink-0 w-[140px]"><div class="w-[140px] h-[140px] skeleton"></div><div class="h-[14px] mt-2 skeleton" style="width:80%"></div></div>
+        <div class="shrink-0 w-[140px]"><div class="w-[140px] h-[140px] skeleton"></div><div class="h-[14px] mt-2 skeleton" style="width:80%"></div></div>
+      </div>
+    </section>
+
+    <section class="mb-7">
+      <div class="flex items-center gap-[10px] mb-3">
+        <div class="w-[26px] h-[26px] rounded-full accent-soft flex items-center justify-center">
+          <i data-lucide="users" class="w-[13px] h-[13px] accent-text"></i>
+        </div>
+        <h2 class="text-[14.5px] font-bold">Artis populer</h2>
+      </div>
+      <div id="artistsRow" class="-mx-4 px-4 flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+        <div class="shrink-0 w-[104px]"><div class="w-[104px] h-[104px] skeleton" style="border-radius:9999px"></div></div>
+        <div class="shrink-0 w-[104px]"><div class="w-[104px] h-[104px] skeleton" style="border-radius:9999px"></div></div>
+        <div class="shrink-0 w-[104px]"><div class="w-[104px] h-[104px] skeleton" style="border-radius:9999px"></div></div>
+      </div>
+    </section>
+  </section>
+
+  <!-- SEARCH -->
+  <section id="view-search" class="view hidden max-w-[640px] mx-auto px-4 pt-6">
+    <h1 class="text-[26px] font-extrabold mb-4">Cari</h1>
+    <div class="relative mb-4">
+      <i data-lucide="search" class="w-[16px] h-[16px] absolute left-[14px] top-1/2 -translate-y-1/2 text-white/40"></i>
+      <input id="searchInput" type="text" onkeypress="handleSearchKey(event)" placeholder="Cari lagu, artis, atau playlist..."
+        class="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl pl-10 pr-[70px] py-[12px] text-[13px] focus:outline-none focus:border-[#328f83]/60">
+      <button onclick="handleSearchKey({key:'Enter'})" class="absolute right-[6px] top-1/2 -translate-y-1/2 px-[14px] py-[7px] rounded-xl accent-bg text-[12px] font-semibold">Cari</button>
+    </div>
+
+    <div class="flex gap-[6px] mb-5 overflow-x-auto no-scrollbar">
+      <button class="search-tab pill shrink-0 px-[16px] py-[7px] rounded-full text-[12px] font-semibold accent-bg" data-type="tracks" onclick="switchSearchTab('tracks',this)">Musik</button>
+      <button class="search-tab pill shrink-0 px-[16px] py-[7px] rounded-full text-[12px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70" data-type="playlists" onclick="switchSearchTab('playlists',this)">Playlist</button>
+      <button class="search-tab pill shrink-0 px-[16px] py-[7px] rounded-full text-[12px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70" data-type="users" onclick="switchSearchTab('users',this)">Artis</button>
+    </div>
+
+    <div id="searchResults" class="space-y-2">
+      <div class="text-white/40 text-[12px] text-center py-10">Ketik sesuatu untuk mencari</div>
+    </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section id="view-library" class="view hidden max-w-[640px] mx-auto px-4 pt-6">
+    <h1 class="text-[26px] font-extrabold mb-4">Library</h1>
+    <div class="flex gap-[6px] mb-5">
+      <button class="lib-tab flex-1 py-[9px] rounded-full text-[12px] font-semibold accent-bg" onclick="switchLibTab('playlists',this)">Playlists</button>
+      <button class="lib-tab flex-1 py-[9px] rounded-full text-[12px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70" onclick="switchLibTab('artists',this)">Artists</button>
+    </div>
+    <button onclick="createPlaylist()" class="w-full py-[11px] rounded-2xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.07] text-[13px] font-semibold mb-4 flex items-center justify-center gap-2 tap">
+      <i data-lucide="plus" class="w-[16px] h-[16px]"></i> Buat Playlist Baru
+    </button>
+    <div id="libraryContent"></div>
+  </section>
+
+  <!-- LIKED -->
+  <section id="view-liked" class="view hidden max-w-[640px] mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-[26px] font-extrabold">Liked Songs</h1>
+        <p id="likedCount" class="text-[12px] text-white/45 mt-1">0 lagu</p>
+      </div>
+      <div class="w-[44px] h-[44px] rounded-full accent-bg flex items-center justify-center">
+        <i data-lucide="heart" class="w-[20px] h-[20px] fill-current"></i>
+      </div>
+    </div>
+    <div id="likedList" class="space-y-2"></div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="view-profile" class="view hidden">
+    <header class="page-head"><h1>Profil</h1></header>
+    <div class="max-w-[440px] mx-auto px-4 pt-6 pb-10">
+
+      <div class="text-center mb-7">
+        <div class="relative inline-block">
+          <div id="profileAvatarBox" class="w-[116px] h-[116px] rounded-[30px] mx-auto overflow-hidden accent-bg flex items-center justify-center text-[40px] font-extrabold border border-white/10 shadow-[0_14px_40px_-10px_rgba(0,0,0,.9)]">
+            <span id="profileAvatar">X</span>
+          </div>
+        </div>
+        <h2 id="profileName" class="grad-text text-[34px] leading-tight font-extrabold mt-4 tracking-tight">SoundPulse</h2>
+        <p id="profileBio" class="text-[15px] text-white/50 mt-1 px-4">Streaming Musik dengan Lirik & Chat</p>
+      </div>
+
+      <div class="card p-5 mb-5">
+        <div class="flex items-center gap-3 mb-4">
+          <i data-lucide="smartphone" class="w-[18px] h-[18px] text-rose-400"></i>
+          <h3 class="text-[14px] font-bold tracking-wide uppercase">Aplikasi &amp; PWA</h3>
+        </div>
+        <div class="space-y-[14px] text-[16px]">
+          <div class="flex justify-between"><span class="row-k">Nama</span><span class="row-v">SoundPulse</span></div>
+          <div class="flex justify-between"><span class="row-k">Versi</span><span class="row-v">v3.7.0</span></div>
+          <div class="flex justify-between"><span class="row-k">Mode Offline PWA</span><span class="row-v flex items-center gap-2 text-emerald-400"><span class="w-[8px] h-[8px] rounded-full bg-emerald-400"></span>Aktif</span></div>
+          <div class="flex justify-between"><span class="row-k">Service Worker</span><span class="row-v" id="swStatus">Mendaftar...</span></div>
+          <div class="flex justify-between"><span class="row-k">Lagu offline</span><span class="row-v" id="offlineCount">0 lagu</span></div>
+          <div class="flex justify-between items-center pt-3 border-t border-white/[0.07] text-[13.5px]">
+            <span class="row-k">Cache PWA tersimpan</span>
+            <button onclick="clearCache()" class="font-bold underline underline-offset-2" style="color:var(--a3)">Bersihkan Cache</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-5 mb-5">
+        <div class="flex items-center gap-3 mb-4">
+          <i data-lucide="code-2" class="w-[18px] h-[18px] text-rose-400"></i>
+          <h3 class="text-[14px] font-bold tracking-wide uppercase">Developer Profile</h3>
+        </div>
+        <div class="flex justify-between items-center text-[16px] pb-4 border-b border-white/[0.07] mb-4">
+          <span class="row-k">Developed by</span>
+          <span class="row-v flex items-center gap-2"><img src="/avatar.jpg" class="w-[30px] h-[30px] rounded-full object-cover" onerror="this.style.display='none'">xs0ciety HUB</span>
+        </div>
+        <div class="flex items-center gap-2 mb-2 text-[13px] font-bold tracking-wider uppercase text-white/60">
+          <i data-lucide="heart" class="w-[15px] h-[15px] text-rose-400 fill-current"></i> Lagu yang disukai
+        </div>
+        <div class="fav-box mb-4">Semua lagu Hindia</div>
+        <div class="flex items-center gap-2 mb-2 text-[13px] font-bold tracking-wider uppercase text-white/60">
+          <i data-lucide="disc" class="w-[15px] h-[15px] text-purple-400"></i> Playlist yang disukai
+        </div>
+        <div class="fav-box">Menari dengan Bayangan &amp; Hindia</div>
+      </div>
+
+      <button onclick="switchView('chat')" class="wide-btn tap"><i data-lucide="message-circle" class="w-[20px] h-[20px]"></i> Chat Global</button>
+      <button id="logoutBtn" onclick="logout()" class="wide-btn tap" style="display:none"><i data-lucide="log-out" class="w-[20px] h-[20px]"></i> Keluar dari Google</button>
+      <button onclick="openTheme()" class="wide-btn tap"><i data-lucide="palette" class="w-[20px] h-[20px]"></i> Ganti Warna Tema</button>
+      <button id="installBtn" onclick="installPWA()" class="wide-btn tap"><i data-lucide="download" class="w-[20px] h-[20px]"></i> Install Aplikasi</button>
+    </div>
+  </section>
+
+  <!-- CHAT -->
+  <section id="view-chat" class="view hidden max-w-[640px] mx-auto" style="padding-bottom: 130px;">
+    <div class="px-4 py-4 flex items-center gap-3 sticky top-0 z-40 bg-[#0a0612]/90 backdrop-blur-xl border-b border-white/[0.06] mb-3">
+      <button onclick="switchView('home')" class="w-[36px] h-[36px] rounded-full bg-white/[0.06] flex items-center justify-center tap">
+        <i data-lucide="chevron-left" class="w-[18px] h-[18px]"></i>
+      </button>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-[18px] font-extrabold">Chat Global</h1>
+        <p id="chatStatus" class="text-[11px] text-white/45 truncate">Ngobrol bareng pendengar SoundPulse</p>
+      </div>
+      <div id="chatAvatarBox" class="relative w-[34px] h-[34px] rounded-full accent-bg flex items-center justify-center text-[12px] font-bold overflow-hidden"></div>
+    </div>
+
+    <div id="chatMessages" class="px-3" style="min-height: 50vh;">
+      <div class="text-center text-white/35 text-[12px] py-10">Memuat chat...</div>
+    </div>
+  </section>
+
+  <!-- OFFLINE -->
+  <section id="view-offline" class="view hidden max-w-[640px] mx-auto px-4 pt-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-[24px] font-extrabold flex items-center gap-2">Offline Mode <span class="text-[10px] px-[8px] py-[3px] rounded-full bg-green-500/15 border border-green-500/30 text-green-400 font-bold" id="netBadge">ONLINE</span></h1>
+        <p class="text-[11.5px] text-white/45 mt-1">File audio tersimpan di perangkat</p>
+      </div>
+      <button onclick="switchView('profile')" class="w-[38px] h-[38px] rounded-full bg-white/[0.06] flex items-center justify-center tap">
+        <i data-lucide="wifi-off" class="w-[16px] h-[16px]"></i>
+      </button>
+    </div>
+    <div class="flex items-center justify-between mb-3">
+      <p id="offlineTotal" class="text-[11px] font-bold tracking-widest uppercase text-white/50">0 LAGU TERSIMPAN</p>
+      <button onclick="playAllOffline()" class="text-[11px] font-semibold text-pink-400 flex items-center gap-1">
+        <i data-lucide="play" class="w-[11px] h-[11px] fill-current"></i> Putar Semua
+      </button>
+    </div>
+    <div id="offlineList" class="space-y-2"></div>
+  </section>
+
+  <!-- MINI PLAYER -->
+  <div id="miniPlayer" class="fixed left-0 right-0 bottom-[104px] z-40 px-4 hidden">
+    <div class="max-w-[640px] mx-auto">
+      <div class="mini-card">
+        <div class="relative w-[50px] h-[50px] shrink-0 cursor-pointer" onclick="openFullPlayer()">
+          <svg class="absolute inset-0 -rotate-90" viewBox="0 0 50 50" fill="none">
+            <circle cx="25" cy="25" r="22" stroke="rgba(255,255,255,.12)" stroke-width="2.5"/>
+            <circle id="miniRing" cx="25" cy="25" r="22" stroke="var(--a2)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="138.2" stroke-dashoffset="138.2"/>
+          </svg>
+          <img id="miniArt" src="" class="absolute left-[5px] top-[5px] w-[40px] h-[40px] rounded-full object-cover">
+        </div>
+        <div class="flex-1 min-w-0 cursor-pointer" onclick="openFullPlayer()">
+          <h4 id="miniTitle" class="text-[15px] font-bold truncate leading-tight">—</h4>
+          <p id="miniArtist" class="text-[13px] text-white/45 truncate mt-[2px]">—</p>
+        </div>
+        <div class="flex items-center gap-[2px] shrink-0">
+          <button onclick="playPrev()" class="mini-btn tap"><i data-lucide="skip-back" class="w-[17px] h-[17px] fill-current"></i></button>
+          <button onclick="togglePlay()" class="mini-play tap"><i data-lucide="pause" id="miniPlayIcon" class="w-[17px] h-[17px] fill-current"></i></button>
+          <button onclick="playNext()" class="mini-btn tap"><i data-lucide="skip-forward" class="w-[17px] h-[17px] fill-current"></i></button>
+          <button onclick="toggleLikeCurrent()" class="mini-btn tap"><i data-lucide="heart" id="miniHeartIcon" class="w-[19px] h-[19px] text-white/55"></i></button>
+          <button onclick="closePlayer()" class="mini-btn tap" style="color:rgba(255,255,255,.5)"><i data-lucide="x" class="w-[18px] h-[18px]"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 z-40 safe-bottom px-4 pb-3">
+    <div class="max-w-[640px] mx-auto nav-pill">
+      <button onclick="switchView('home')" id="navbtn-home" class="navbtn nav-item tap"><i data-lucide="home" class="w-[24px] h-[24px]"></i><span class="nav-dot"></span></button>
+      <button onclick="switchView('search')" id="navbtn-search" class="navbtn nav-item tap"><i data-lucide="search" class="w-[24px] h-[24px]"></i><span class="nav-dot"></span></button>
+      <button onclick="switchView('library')" id="navbtn-library" class="navbtn nav-item tap"><i data-lucide="library" class="w-[24px] h-[24px]"></i><span class="nav-dot"></span></button>
+      <button onclick="openTheme()" class="fab-center tap" aria-label="Ganti warna tema"><i data-lucide="palette" class="w-[30px] h-[30px]"></i></button>
+      <button onclick="switchView('offline')" id="navbtn-offline" class="navbtn nav-item tap"><i data-lucide="wifi-off" class="w-[24px] h-[24px]"></i><span class="nav-dot"></span></button>
+      <button onclick="switchView('liked')" id="navbtn-liked" class="navbtn nav-item tap"><i data-lucide="heart" class="w-[24px] h-[24px]"></i><span class="nav-dot"></span></button>
+      <button onclick="switchView('profile')" id="navbtn-profile" class="navbtn nav-item tap" aria-label="Profil"><span id="navProfileIcon" class="flex items-center justify-center"><i data-lucide="user" class="w-[24px] h-[24px]"></i></span><span class="nav-dot"></span></button>
+    </div>
+  </nav>
+
+  <!-- CHAT: BAR LOGIN GOOGLE (tampil kalau belum login) -->
+  <div id="chatLoginBar" class="chat-input-bar hidden">
+    <div class="max-w-[640px] mx-auto text-center">
+      <p class="text-[12.5px] text-white/60 mb-3">Masuk dengan Google untuk ikut ngobrol</p>
+      <div id="gsiBtn" class="flex justify-center min-h-[44px]"></div>
+      <p id="chatLoginErr" class="hidden text-[11.5px] text-red-400/90 mt-2"></p>
+    </div>
+  </div>
+
+  <!-- CHAT: INPUT -->
+  <div id="chatInputBar" class="chat-input-bar hidden">
+    <div id="editPreview" class="hidden max-w-[640px] mx-auto mb-2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-blue-500/10 border border-blue-500/20">
+      <div class="w-[3px] h-[32px] rounded-full bg-blue-500 shrink-0"></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-[11px] font-semibold text-blue-400 truncate">Mengedit pesan</p>
+        <p id="editText" class="text-[11px] text-white/50 truncate">—</p>
+      </div>
+      <button onclick="cancelEdit()" class="w-[28px] h-[28px] rounded-full flex items-center justify-center text-white/50 tap">
+        <i data-lucide="x" class="w-[14px] h-[14px]"></i>
+      </button>
+    </div>
+
+    <div id="replyPreview" class="hidden max-w-[640px] mx-auto mb-2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.06] border border-white/[0.08]">
+      <div class="w-[3px] h-[32px] rounded-full accent-bg shrink-0"></div>
+      <div class="flex-1 min-w-0">
+        <p id="replyName" class="text-[11px] font-semibold accent-text truncate">—</p>
+        <p id="replyText" class="text-[11px] text-white/50 truncate">—</p>
+      </div>
+      <button onclick="cancelReply()" class="w-[28px] h-[28px] rounded-full flex items-center justify-center text-white/50 tap">
+        <i data-lucide="x" class="w-[14px] h-[14px]"></i>
+      </button>
+    </div>
+
+    <div id="attachPreview" class="hidden max-w-[640px] mx-auto mb-2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.06] border border-white/[0.08]">
+      <img id="attachPreviewImg" class="hidden w-[42px] h-[42px] rounded-lg object-cover shrink-0">
+      <div id="attachPreviewFile" class="hidden w-[42px] h-[42px] rounded-lg bg-white/[0.08] flex items-center justify-center shrink-0">
+        <i data-lucide="file" class="w-[18px] h-[18px] text-white/70"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p id="attachPreviewName" class="text-[11.5px] font-semibold truncate">Foto</p>
+        <p id="attachPreviewSize" class="text-[10px] text-white/45">—</p>
+      </div>
+      <button onclick="cancelAttach()" class="w-[28px] h-[28px] rounded-full flex items-center justify-center text-white/50 tap">
+        <i data-lucide="x" class="w-[14px] h-[14px]"></i>
+      </button>
+    </div>
+
+    <div class="max-w-[640px] mx-auto flex items-center gap-2">
+      <input type="file" id="chatFileInput" class="hidden" accept="*/*" onchange="handleChatFile(event)">
+      <input type="file" id="chatImageInput" class="hidden" accept="image/*" onchange="handleChatImage(event)">
+      <button onclick="document.getElementById('chatFileInput').click()" class="w-[42px] h-[42px] rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-white/70 tap shrink-0" aria-label="Kirim file">
+        <i data-lucide="paperclip" class="w-[17px] h-[17px]"></i>
+      </button>
+      <button onclick="document.getElementById('chatImageInput').click()" class="w-[42px] h-[42px] rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-white/70 tap shrink-0" aria-label="Kirim foto">
+        <i data-lucide="image" class="w-[17px] h-[17px]"></i>
+      </button>
+      <input id="chatInput" type="text" placeholder="Tulis pesan..." maxlength="500"
+        onkeypress="if(event.key==='Enter')sendChat()"
+        class="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-2xl px-[14px] py-[10px] text-[13px] focus:outline-none focus:border-[#328f83]/60 min-w-0">
+      <button onclick="sendChat()" class="w-[42px] h-[42px] rounded-full accent-bg flex items-center justify-center tap shrink-0" aria-label="Kirim">
+        <i data-lucide="send" class="w-[17px] h-[17px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- CHAT: MENU PESAN (tahan lama pada pesan) -->
+  <div id="chatContextMenu" class="fixed inset-0 z-[500] hidden bg-black/60 backdrop-blur-sm" onclick="closeChatContextMenu()">
+    <div class="absolute bottom-0 left-0 right-0 bg-[#1a1a1d] rounded-t-3xl p-4 flex flex-col gap-1 shadow-2xl" style="animation: slideUp .2s ease-out forwards;" onclick="event.stopPropagation()">
+      <div class="w-12 h-1 bg-white/20 rounded-full mx-auto mb-2"></div>
+      <button id="ctxReplyBtn" onclick="startReplyFromMenu()" class="w-full py-3 text-left px-4 font-semibold text-white/90 flex items-center gap-3 tap rounded-xl hover:bg-white/5">
+        <i data-lucide="reply" class="w-5 h-5"></i> Balas
+      </button>
+      <button id="ctxCopyBtn" onclick="copyMessage()" class="w-full py-3 text-left px-4 font-semibold text-white/90 flex items-center gap-3 tap rounded-xl hover:bg-white/5">
+        <i data-lucide="copy" class="w-5 h-5"></i> Salin
+      </button>
+      <button id="ctxEditBtn" onclick="startEditMessage()" class="w-full py-3 text-left px-4 font-semibold text-white/90 flex items-center gap-3 tap rounded-xl hover:bg-white/5">
+        <i data-lucide="pencil" class="w-5 h-5"></i> Edit Pesan
+      </button>
+      <button id="ctxDeleteBtn" onclick="deleteMessage()" class="w-full py-3 text-left px-4 font-semibold text-red-400 flex items-center gap-3 tap rounded-xl hover:bg-red-500/10">
+        <i data-lucide="trash-2" class="w-5 h-5"></i> Hapus Pesan
+      </button>
+      <button onclick="closeChatContextMenu()" class="w-full py-3 text-center font-semibold text-white/50 mt-1 tap rounded-xl hover:bg-white/5">Batal</button>
+    </div>
+  </div>
+
+  <!-- CHAT: PRATINJAU FOTO -->
+  <div id="imgViewer" class="fixed inset-0 z-[700] bg-black/95 items-center justify-center p-3" style="display:none" onclick="closeImageFull()">
+    <img id="imgViewerImg" class="max-w-full max-h-full object-contain rounded-lg" alt="Foto">
+  </div>
+
+  <!-- FULL PLAYER -->
+  <div id="fullPlayer" class="full-player">
+    <div id="playerAmbient" class="ambient-blur"></div>
+    <div class="absolute inset-0" style="background: linear-gradient(180deg, rgba(9,9,11,.4) 0%, rgba(9,9,11,.88) 65%, #09090b 100%);"></div>
+
+    <div class="relative h-full flex flex-col max-w-[640px] mx-auto px-5 pt-5 pb-6 overflow-y-auto no-scrollbar">
+      <div class="flex items-center justify-between mb-5 shrink-0">
+        <button onclick="closeFullPlayer()" class="w-[40px] h-[40px] rounded-full flex items-center justify-center text-white/85 tap"><i data-lucide="chevron-down" class="w-[24px] h-[24px]"></i></button>
+        <div class="text-center flex-1 min-w-0">
+          <p class="text-[10px] font-bold tracking-[0.24em] text-white/45 uppercase">Sedang Diputar</p>
+          <p id="fullArtistTop" class="text-[14px] font-bold mt-[2px] truncate px-2">—</p>
+        </div>
+        <div class="w-[40px] h-[40px]"></div>
+      </div>
+
+      <div class="flex justify-center mb-5 shrink-0">
+        <div class="bg-black/35 border border-white/10 rounded-full p-[4px] flex gap-[2px]">
+          <button id="tabCover" onclick="switchPlayerTab('cover')" class="px-[26px] py-[8px] rounded-full text-[12.5px] font-semibold bg-white/[0.14] transition">Cover</button>
+          <button id="tabLyrics" onclick="switchPlayerTab('lyrics')" class="px-[26px] py-[8px] rounded-full text-[12.5px] font-medium text-white/60 transition">Lirik</button>
+        </div>
+      </div>
+
+      <div id="panelCover" class="flex-1 flex items-center justify-center mb-5">
+        <div class="relative w-full max-w-[340px] aspect-square rounded-[28px] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,.8)]">
+          <img id="fullArt" src="" class="w-full h-full object-cover">
+        </div>
+      </div>
+
+      <div id="panelLyrics" class="hidden flex-1 mb-5">
+        <div class="rounded-[28px] bg-[#12161c]/60 border border-white/[0.08] p-4 backdrop-blur-md">
+          <div class="flex items-center gap-3 mb-2 pb-3 border-b border-white/[0.07]">
+            <img id="lyricArt" src="" class="w-[46px] h-[46px] rounded-xl object-cover">
+            <div class="min-w-0 flex-1">
+              <p id="lyricTitle" class="text-[14px] font-bold truncate">—</p>
+              <p id="lyricArtist" class="text-[12px] text-white/50 truncate">—</p>
+            </div>
+          </div>
+          <div id="lyricScroll" class="lyric-scroll">
+            <div id="lyricContent" class="text-center"><div class="flex justify-center py-6"><div class="spinner"></div></div></div>
+          </div>
+          <div class="flex items-center justify-between mt-2 pt-3 border-t border-white/[0.07]">
+            <div class="flex items-center gap-2">
+              <span class="text-[12px] text-white/55 font-semibold">Sync</span>
+              <button onclick="lyricOffset(-0.25)" title="Lirik lebih lambat" aria-label="Lirik lebih lambat" class="w-[28px] h-[28px] rounded-full bg-white/[0.1] flex items-center justify-center tap"><i data-lucide="minus" class="w-[13px] h-[13px]"></i></button>
+              <button onclick="lyricOffset(0.25)" title="Lirik lebih cepat" aria-label="Lirik lebih cepat" class="w-[28px] h-[28px] rounded-full bg-white/[0.1] flex items-center justify-center tap"><i data-lucide="plus" class="w-[13px] h-[13px]"></i></button>
+            </div>
+            <button onclick="showFullLyrics()" class="flex items-center gap-1 px-[14px] py-[7px] rounded-full bg-white/[0.07] border border-white/[0.12] text-[12px] font-bold tap"><i data-lucide="maximize-2" class="w-[12px] h-[12px]"></i> Lirik Penuh</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shrink-0">
+        <div class="flex items-end justify-between gap-3 mb-4">
+          <div class="min-w-0 flex-1">
+            <p class="text-[12px] font-bold text-white/45 mb-1 flex items-center gap-[6px]"><i data-lucide="radio" class="w-[13px] h-[13px]"></i> SoundPulse</p>
+            <h2 id="fullTitle" class="text-[26px] leading-tight font-extrabold truncate">—</h2>
+            <p id="fullArtist" class="text-[15px] text-white/50 truncate mt-[2px]">—</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="downloadCurrent()" class="act-btn tap" id="fullDownloadBtn"><i data-lucide="download" id="fullDownloadIcon" class="w-[22px] h-[22px] text-white/75"></i></button>
+            <button onclick="toggleLikeCurrent()" class="act-btn tap"><i data-lucide="heart" id="fullHeartIcon" class="w-[22px] h-[22px] text-white/75"></i></button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 mb-4">
+          <button onclick="skipBy(-10)" class="rnd-btn tap" aria-label="Mundur 10 detik"><i data-lucide="rotate-ccw" class="w-[18px] h-[18px]"></i></button>
+          <span id="timeCurrent" class="text-[12.5px] font-bold text-white/85 tabular-nums">0:00</span>
+          <input id="fullProgress" type="range" class="prog flex-1" min="0" max="100" step="0.1" value="0" oninput="seekTo(this.value)">
+          <span id="timeTotal" class="text-[12.5px] font-bold text-white/85 tabular-nums">0:00</span>
+          <button onclick="skipBy(10)" class="rnd-btn tap" aria-label="Maju 10 detik"><i data-lucide="rotate-cw" class="w-[18px] h-[18px]"></i></button>
+        </div>
+
+        <div class="flex items-center gap-3 mb-5">
+          <button onclick="toggleMute()" class="w-[30px] h-[30px] flex items-center justify-center text-white/65 tap"><i data-lucide="volume-2" id="volumeIcon" class="w-[20px] h-[20px]"></i></button>
+          <input id="volumeSlider" type="range" class="vol flex-1" min="0" max="100" value="100" style="--pct:100%" oninput="setVolume(this.value); this.style.setProperty('--pct', this.value + '%')">
+        </div>
+
+        <div class="flex items-center justify-between">
+          <button onclick="toggleShuffle()" id="shuffleBtn" class="w-[44px] h-[44px] rounded-full flex items-center justify-center text-white/60 tap"><i data-lucide="shuffle" class="w-[22px] h-[22px]"></i></button>
+          <button onclick="playPrev()" class="w-[56px] h-[56px] rounded-full flex items-center justify-center text-white tap"><i data-lucide="skip-back" class="w-[32px] h-[32px] fill-current"></i></button>
+          <button onclick="togglePlay()" class="play-big tap"><i data-lucide="pause" id="fullPlayIcon" class="w-[36px] h-[36px] fill-current"></i></button>
+          <button onclick="playNext()" class="w-[56px] h-[56px] rounded-full flex items-center justify-center text-white tap"><i data-lucide="skip-forward" class="w-[32px] h-[32px] fill-current"></i></button>
+          <button onclick="toggleRepeat()" id="repeatBtn" class="w-[44px] h-[44px] rounded-full flex items-center justify-center text-white/60 tap"><i data-lucide="repeat" class="w-[22px] h-[22px]"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL LYRICS MODAL -->
+  <div id="fullLyricsModal" class="modal-overlay hidden" style="z-index: 500;">
+    <div class="relative h-full flex flex-col p-4">
+      <div class="flex items-center justify-between mb-4 max-w-[640px] mx-auto w-full shrink-0">
+        <button onclick="closeFullLyrics()" class="w-[38px] h-[38px] rounded-full bg-white/[0.08] flex items-center justify-center tap">
+          <i data-lucide="chevron-down" class="w-[20px] h-[20px]"></i>
+        </button>
+        <p class="text-[13px] font-bold">Lirik Penuh</p>
+        <div class="w-[38px]"></div>
+      </div>
+      <div class="max-w-[640px] mx-auto w-full flex-1 overflow-y-auto no-scrollbar glass rounded-3xl border border-white/[0.08] p-6">
+        <div id="fullLyricHeader" class="flex items-center gap-3 mb-5 pb-5 border-b border-white/[0.06]">
+          <img id="fullLyricArt" src="" class="w-[56px] h-[56px] rounded-xl object-cover">
+          <div class="min-w-0">
+            <p id="fullLyricTitle" class="text-[15px] font-bold truncate">—</p>
+            <p id="fullLyricArtist" class="text-[12px] text-white/50 truncate">—</p>
+          </div>
+        </div>
+        <div id="fullLyricContent" class="text-[16px] leading-[2] text-white/85 whitespace-pre-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THEME -->
+  <div id="themeModal" class="modal-overlay hidden" onclick="if(event.target===this)closeTheme()">
+    <div class="h-full flex items-end justify-center p-4">
+      <div class="modal-card card w-full max-w-[440px] p-5" style="background:#141417">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-[16px] font-extrabold flex items-center gap-2"><i data-lucide="palette" class="w-[18px] h-[18px]"></i> Ganti Warna Tema</h3>
+          <button onclick="closeTheme()" class="w-[34px] h-[34px] rounded-full flex items-center justify-center text-white/50 tap"><i data-lucide="x" class="w-[18px] h-[18px]"></i></button>
+        </div>
+        <div id="themeGrid" class="grid grid-cols-3 gap-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYLIST -->
+  <div id="playlistModal" class="modal-overlay hidden" style="z-index:450" onclick="if(event.target===this)closePlaylistModal()">
+    <div class="h-full flex items-end justify-center p-4">
+      <div class="modal-card card w-full max-w-[440px] p-5" style="background:#181818">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h3 id="playlistModalTitle" class="text-[17px] font-extrabold">Buat playlist</h3>
+            <p id="playlistModalSubtitle" class="text-[12px] text-white/45 mt-1">Kumpulkan lagu yang ingin kamu putar lagi.</p>
+          </div>
+          <button onclick="closePlaylistModal()" class="w-[36px] h-[36px] rounded-full flex items-center justify-center text-white/55 tap" aria-label="Tutup">
+            <i data-lucide="x" class="w-[18px] h-[18px]"></i>
+          </button>
+        </div>
+        <div id="playlistTrackPreview" class="hidden items-center gap-3 my-4 p-3 rounded-xl bg-white/[0.05]">
+          <img id="playlistTrackArt" src="" class="w-[44px] h-[44px] rounded-lg object-cover" alt="">
+          <div class="min-w-0"><p id="playlistTrackTitle" class="text-[13px] font-semibold truncate"></p><p id="playlistTrackArtist" class="text-[11px] text-white/45 truncate"></p></div>
+        </div>
+        <div id="playlistChoices" class="hidden max-h-[35vh] overflow-y-auto space-y-1 my-4"></div>
+        <label for="playlistNameInput" class="block text-[11px] text-white/55 mb-2">Nama playlist</label>
+        <input id="playlistNameInput" type="text" maxlength="60" placeholder="Contoh: Lagu buat perjalanan"
+          onkeydown="if(event.key==='Enter')createPlaylistFromModal()"
+          class="w-full rounded-xl bg-white/[0.07] border border-white/[0.1] px-3 py-3 text-[14px] focus:outline-none focus:border-white/30">
+        <button onclick="createPlaylistFromModal()" class="w-full mt-3 py-3 rounded-full accent-bg text-[13px] font-bold tap">Buat playlist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed top-[20px] left-1/2 z-[600] px-[16px] py-[10px] rounded-2xl glass border border-white/[0.09] text-[12.5px] font-medium opacity-0 pointer-events-none transition-all duration-300 whitespace-nowrap" style="transform: translate(-50%, -12px);">
+    Notifikasi
+  </div>
+
+</div>
+
+<audio id="audioEngine" preload="auto" playsinline></audio>
+<script src="/audio.js"></script>
+
+<script>
+/* ============================================================
+   INIT
+============================================================ */
+lucide.createIcons();
+
+const apiClient = window.SoundPulseAPI ? new SoundPulseAPI() : null;
+const audio = document.getElementById("audioEngine");
+let hlsPlayer = null;
+let hlsToken = 0;
+let recoveringStream = false;
+let retryCount = 0;
+const MAX_RETRY = 2;
+
+const state = {
+  tracks: [],
+  currentIndex: -1,
+  currentTrack: null,
+  likes: JSON.parse(localStorage.getItem("sp_likes") || "[]"),
+  recent: JSON.parse(localStorage.getItem("sp_recent") || "null"),
+  playlists: JSON.parse(localStorage.getItem("sp_playlists") || "[]"),
+  downloaded: JSON.parse(localStorage.getItem("sp_downloaded") || "[]"),
+  user: null,
+  authClientId: null,
+  chatPollTimer: null,
+  shuffle: false,
+  repeat: "off",
+  searchType: "tracks",
+  view: "home",
+  lyricOffset: 0,
+  lyricLines: [],
+  lyricTimes: null,
+  lyricEnds: null,
+  lyricGap: null,
+  lyricStarts: null,
+  lyricWeights: null,
+  lyricTotalW: 0,
+  lyricSynced: false,
+  lyricLoadingFor: null,
+  currentLyricLine: -1,
+  replyTo: null,
+  attach: null,
+  editingMessageId: null,
+  contextMenuId: null,
+};
+state.playlists = (Array.isArray(state.playlists) ? state.playlists : [])
+  .filter(p => p && typeof p === "object")
+  .map((p, i) => ({
+    id: String(p.id || `local-${i}-${Date.now().toString(36)}`),
+    name: String(p.name || "Playlist baru").trim() || "Playlist baru",
+    tracks: Array.isArray(p.tracks) ? p.tracks.filter(t => t && t.id) : [],
+  }));
+let activePlaylistId = null;
+let pendingPlaylistTrack = null;
+
+const DEFAULT_ART = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23150a1e'/><text x='50%' y='60%' font-family='sans-serif' font-size='42' fill='%23a855f7' text-anchor='middle'>♪</text></svg>";
+
+const GENRES = ["Semua", "Lofi", "Chill", "Focus", "Perjalanan", "Pop Indo", "Indie Indo", "Remix / DJ"];
+const GENRE_QUERY = {
+  "Semua": "Indonesian Pop Hits",
+  "Lofi": "lofi indonesia",
+  "Chill": "chill lofi",
+  "Focus": "focus music",
+  "Perjalanan": "road trip indonesia",
+  "Pop Indo": "pop indonesia",
+  "Indie Indo": "indie indonesia",
+  "Remix / DJ": "remix dj",
+};
+
+/* ============================================================
+   UTILS
+============================================================ */
+function esc(s) {
+  return String(s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function isSafeDataUri(value, expectedKind) {
+  if (typeof value !== "string") return false;
+  const re = expectedKind === "image"
+    ? /^data:image\/(png|jpe?g|gif|webp|bmp|svg\+xml);base64,[A-Za-z0-9+/]+=*$/
+    : /^data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/]+=*$/i;
+  return re.test(value) && value.length < 700000;
+}
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.opacity = "1";
+  el.style.transform = "translate(-50%, 0)";
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translate(-50%, -12px)";
+  }, 2200);
+}
+
+function fmtCount(n) {
+  if (!n) return "0";
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
+
+function fmtTime(sec) {
+  if (!isFinite(sec) || sec < 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function colorFromName(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360}, 65%, 55%)`;
+}
+
+/* ============================================================
+   NAV
+============================================================ */
+function switchView(name) {
+  if (state.view === "chat" && name !== "chat") {
+    stopChatPoll();
+    cancelEdit();
+    closeChatContextMenu();
+  }
+  state.view = name;
+
+  document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+  const el = document.getElementById("view-" + name);
+  if (el) el.classList.remove("hidden");
+
+  document.querySelectorAll(".navbtn").forEach(b => b.classList.remove("nav-active"));
+  const navBtn = document.getElementById("navbtn-" + name);
+  if (navBtn) navBtn.classList.add("nav-active");
+
+  renderChatAuth();
+  document.getElementById("bottomNav").style.display = name === "chat" ? "none" : "";
+  document.getElementById("miniPlayer").style.display = (state.currentTrack && name !== "chat") ? "" : "none";
+  window.scrollTo({ top: 0 });
+
+  if (name === "chat") { startChatPoll(); }
+  if (name === "liked") renderLiked();
+  if (name === "library") renderLibrary();
+  if (name === "offline") renderOffline();
+  if (name === "profile") updateProfileUI();
+
+  lucide.createIcons();
+}
+
+/* ============================================================
+   AKUN GOOGLE / PROFIL
+============================================================ */
+let gsiInit = false;
+let gsiTries = 0;
+
+function avatarImg(url) {
+  return (typeof url === "string" && /^https:\/\//.test(url))
+    ? `<img src="${esc(url)}" referrerpolicy="no-referrer" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">`
+    : "";
+}
+
+async function loadAuth() {
+  try {
+    const r = await fetch("/api/auth", { cache: "no-store" });
+    const d = await r.json();
+    state.authClientId = d.clientId || null;
+    state.user = d.user || null;
+    try {
+      if (state.user) localStorage.setItem("sp_user", JSON.stringify(state.user));
+      else localStorage.removeItem("sp_user");
+    } catch {}
+  } catch {
+    // offline: pakai data terakhir supaya tampilan profil tidak kosong
+    try { state.user = JSON.parse(localStorage.getItem("sp_user") || "null"); } catch {}
+  }
+  updateProfileUI();
+  renderChatAuth();
+}
+
+function mountGoogleButton() {
+  const box = document.getElementById("gsiBtn");
+  const err = document.getElementById("chatLoginErr");
+  if (!box || state.user) return;
+
+  if (!state.authClientId) {
+    box.innerHTML = "";
+    err.textContent = "Login Google belum dikonfigurasi di server.";
+    err.classList.remove("hidden");
+    return;
+  }
+  err.classList.add("hidden");
+
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    if (gsiTries++ < 15) {
+      box.innerHTML = `<span class="text-white/45 text-[12px]">Memuat tombol Google...</span>`;
+      setTimeout(mountGoogleButton, 600);
+    } else {
+      box.innerHTML = "";
+      err.textContent = "Tombol Google gagal dimuat. Cek koneksi lalu buka ulang chat.";
+      err.classList.remove("hidden");
+      gsiTries = 0;
+    }
+    return;
+  }
+  gsiTries = 0;
+
+  if (!gsiInit) {
+    google.accounts.id.initialize({ client_id: state.authClientId, callback: onGoogleCredential, auto_select: false });
+    gsiInit = true;
+  }
+  box.innerHTML = "";
+  google.accounts.id.renderButton(box, { theme: "filled_black", size: "large", shape: "pill", text: "continue_with", width: 260 });
+}
+
+async function onGoogleCredential(resp) {
+  try {
+    const r = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential: resp.credential }),
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || "Login gagal");
+    state.user = d.user;
+    try { localStorage.setItem("sp_user", JSON.stringify(d.user)); } catch {}
+    toast("Halo, " + d.user.name + "!");
+    updateProfileUI();
+    renderChatAuth();
+    state._chatSig = null;
+    renderChat(_allMessages, true);
+    loadChat(true);
+  } catch (e) {
+    toast("Login gagal: " + e.message);
+  }
+}
+
+async function logout() {
+  if (!confirm("Keluar dari akun Google?")) return;
+  try { await fetch("/api/auth", { method: "DELETE" }); } catch {}
+  try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch {}
+  state.user = null;
+  try { localStorage.removeItem("sp_user"); } catch {}
+  cancelEdit(); cancelReply(); cancelAttach(); closeChatContextMenu();
+  updateProfileUI();
+  renderChatAuth();
+  state._chatSig = null;
+  renderChat(_allMessages);
+  toast("Berhasil keluar");
+}
+
+// Atur bar bawah chat: kolom ketik kalau sudah login, tombol Google kalau belum
+function renderChatAuth() {
+  const inChat = state.view === "chat";
+  document.getElementById("chatInputBar").classList.toggle("hidden", !(inChat && state.user));
+  document.getElementById("chatLoginBar").classList.toggle("hidden", !(inChat && !state.user));
+  if (inChat && !state.user) mountGoogleButton();
+
+  const box = document.getElementById("chatAvatarBox");
+  if (box) {
+    const u = state.user;
+    box.innerHTML = u
+      ? `<span>${esc((u.name || "?").charAt(0).toUpperCase())}</span>${avatarImg(u.picture)}`
+      : `<i data-lucide="user" class="w-[16px] h-[16px] text-white/85"></i>`;
+    lucide.createIcons();
+  }
+}
+
+function updateProfileUI() {
+  const u = state.user;
+  const name = (u && u.name) || "SoundPulse";
+
+  document.getElementById("profileName").textContent = name;
+  document.getElementById("profileBio").textContent = u ? "Masuk dengan akun Google" : "Streaming Musik dengan Lirik & Chat";
+
+  const box = document.getElementById("profileAvatarBox");
+  box.classList.add("relative");
+  box.innerHTML = `<span>${esc(name.charAt(0).toUpperCase())}</span>${u ? avatarImg(u.picture) : ""}`;
+
+  const out = document.getElementById("logoutBtn");
+  if (out) out.style.display = u ? "" : "none";
+}
+
+/* ============================================================
+   GENRE
+============================================================ */
+function renderGenrePills() {
+  const wrap = document.getElementById("genrePills");
+  wrap.innerHTML = GENRES.map((g, i) => `
+    <button onclick="pickGenre('${g}', this)"
+      class="genre-pill pill shrink-0 px-[16px] py-[8px] rounded-full text-[12px] ${i === 0 ? 'font-semibold accent-bg text-white' : 'font-medium bg-white/[0.05] border border-white/[0.08] text-white/70'}">
+      ${esc(g)}
+    </button>
+  `).join("");
+}
+
+function pickGenre(genre, btn) {
+  document.querySelectorAll(".genre-pill").forEach(p => {
+    p.className = "genre-pill pill shrink-0 px-[16px] py-[8px] rounded-full text-[12px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70";
+  });
+  btn.className = "genre-pill pill shrink-0 px-[16px] py-[8px] rounded-full text-[12px] font-semibold accent-bg text-white";
+  document.getElementById("picksTitle").textContent = "Buat kamu";
+  loadQuickPicks(GENRE_QUERY[genre] || genre);
+}
+
+function reloadQuickPicks() {
+  loadQuickPicks(document.getElementById("picksTitle").dataset.query || "Indonesian Pop Hits");
+}
+
+/* ============================================================
+   QUICK PICKS
+============================================================ */
+async function loadQuickPicks(query) {
+  const grid = document.getElementById("quickPicksGrid");
+  document.getElementById("picksTitle").dataset.query = query;
+  grid.innerHTML = `<div class="flex justify-center py-10"><div class="spinner"></div></div>`;
+
+  if (!apiClient) {
+    grid.innerHTML = `<div class="text-red-400/80 text-[12px] py-6 text-center">API client tidak tersedia. Cek Console browser.</div>`;
+    return;
+  }
+  try {
+    const data = await apiClient.search(query);
+    const tracks = (data.collection || []).filter(t => t && t.title).slice(0, 20);
+    state.tracks = tracks;
+    renderTrackList(tracks, "quickPicksGrid");
+  } catch (e) {
+    grid.innerHTML = `<div class="text-red-400/80 text-[12px] py-6 text-center">Gagal memuat: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderTrackList(list, containerId) {
+  const el = document.getElementById(containerId);
+  if (!list.length) {
+    el.innerHTML = `<div class="text-white/35 text-[12px] py-8 text-center">Tidak ada lagu ditemukan.</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map((t, i) => {
+    const art = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+    const artist = (t.user && t.user.username) || "Unknown";
+    const playing = state.currentTrack && state.currentTrack.id === t.id;
+    const liked = state.likes.some(l => l.id === t.id);
+    const downloaded = state.downloaded.some(d => d.id === t.id);
+    const blocked = t.streamable === false;
+    const inPlaylist = containerId === "playlistTrackRows";
+
+    return `
+      <div class="fadeUp tap rounded-2xl border ${playing ? 'border-white/20 bg-white/[0.06]' : 'border-white/[0.06] bg-white/[0.025] hover:bg-white/[0.045]'} p-[10px] transition ${blocked ? 'opacity-50' : ''} ${inPlaylist ? 'local-playlist-track' : ''}">
+        <div class="song-row" onclick="${blocked ? `toast('Lagu ini tidak bisa diputar')` : `playTrackByList(${i},'${containerId}')`}">
+          <div class="relative w-[52px] h-[52px] rounded-xl overflow-hidden shrink-0 border border-white/[0.06] bg-white/[0.03]">
+            <img src="${art}" class="w-full h-full object-cover" onerror="this.src='${DEFAULT_ART}'">
+            ${playing ? `<div class="absolute inset-0 bg-black/55 flex items-center justify-center"><i data-lucide="pause" class="w-[20px] h-[20px] text-white fill-current"></i></div>` : ''}
+          </div>
+          <div class="min-w-0">
+            <h4 class="text-[13px] font-semibold truncate leading-tight ${playing ? 'text-[#79c9b8]' : ''}">${esc(t.title)}</h4>
+            <p class="text-[11px] text-white/45 truncate mt-[3px]">${esc(artist)}</p>
+          </div>
+          <div class="song-actions" onclick="event.stopPropagation()">
+            <button onclick="${inPlaylist ? `removeTrackFromPlaylist(${i})` : `openAddTrackModal(${i})`}" class="w-[34px] h-[34px] rounded-full flex items-center justify-center text-white/50 tap" aria-label="${inPlaylist ? 'Hapus dari playlist' : 'Tambahkan ke playlist'}" title="${inPlaylist ? 'Hapus dari playlist' : 'Tambahkan ke playlist'}">
+              <i data-lucide="${inPlaylist ? 'list-minus' : 'list-plus'}" class="w-[15px] h-[15px]"></i>
+            </button>
+            <button onclick="toggleLikeById('${t.id}')" class="w-[34px] h-[34px] rounded-full flex items-center justify-center ${liked ? 'text-pink-400' : 'text-white/50'} tap">
+              <i data-lucide="heart" class="w-[15px] h-[15px] ${liked ? 'fill-current' : ''}"></i>
+            </button>
+            <button onclick="downloadTrackById('${t.id}')" class="w-[34px] h-[34px] rounded-full flex items-center justify-center ${downloaded ? 'text-green-400' : 'text-white/50'} tap">
+              <i data-lucide="${downloaded ? 'check-circle' : 'download'}" class="w-[15px] h-[15px] ${downloaded ? 'fill-current' : ''}"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  lucide.createIcons();
+}
+
+function playTrackByList(idx, containerId) {
+  if (containerId === "likedList") state.tracks = state.likes.slice();
+  else if (containerId === "offlineList") state.tracks = state.downloaded.slice();
+  playTrack(idx);
+}
+
+/* ============================================================
+   PLAYLISTS & ARTISTS
+============================================================ */
+async function loadPopularPlaylists() {
+  const row = document.getElementById("playlistsRow");
+  if (!apiClient) { row.innerHTML = `<div class="shrink-0 text-red-400/70 text-[12px] py-4">API client tidak siap</div>`; return; }
+  try {
+    const data = await apiClient.searchPlaylists("pop indonesia");
+    const items = (data.collection || []).filter(p => p && p.id && p.title).slice(0, 12);
+    if (!items.length) { row.innerHTML = `<div class="shrink-0 text-white/35 text-[12px] py-4">Playlist tidak tersedia</div>`; return; }
+    row.innerHTML = items.map((p, idx) => {
+      const art = p.artwork_url || (p.user && p.user.avatar_url) || null;
+      const creator = (p.user && p.user.username) || "Unknown";
+      const hue1 = (idx * 40) % 360, hue2 = (hue1 + 40) % 360;
+      return `
+        <button data-playlist-id="${esc(p.id)}" data-playlist-title="${esc(p.title)}"
+          onclick="openPlaylist(this.dataset.playlistId,this.dataset.playlistTitle)" class="fadeUp tap shrink-0 w-[140px] text-left">
+          <div class="relative w-[140px] h-[140px] rounded-2xl overflow-hidden cover-grad border border-white/[0.07]" style="${art ? '' : `background:linear-gradient(135deg,hsl(${hue1},65%,40%) 0%,hsl(${hue2},60%,20%) 100%)`}">
+            ${art ? `<img src="${esc(art)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
+            <div class="absolute bottom-[8px] left-[8px] z-10">
+              <span class="text-[9px] font-bold uppercase text-white bg-black/50 px-[8px] py-[3px] rounded-full border border-white/10">${p.track_count || 0} tracks</span>
+            </div>
+          </div>
+          <h4 class="text-[12.5px] font-semibold mt-2 truncate">${esc(p.title)}</h4>
+          <p class="text-[10.5px] text-white/40 truncate mt-[2px]">${esc(creator)}</p>
+        </button>
+      `;
+    }).join("");
+    lucide.createIcons();
+  } catch (e) { row.innerHTML = `<div class="shrink-0 text-red-400/70 text-[12px] py-4">Gagal: ${esc(e.message)}</div>`; }
+}
+
+async function openPlaylist(id, title) {
+  toast("Membuka: " + title);
+  switchView("home");
+  const grid = document.getElementById("quickPicksGrid");
+  grid.innerHTML = `<div class="flex justify-center py-10"><div class="spinner"></div></div>`;
+  document.getElementById("picksTitle").textContent = title;
+  try {
+    const data = await apiClient.getPlaylistTracks(id);
+    const tracks = (data.collection || []).filter(t => t && t.title);
+    state.tracks = tracks;
+    renderTrackList(tracks, "quickPicksGrid");
+    document.getElementById("picksTitle").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (e) { grid.innerHTML = `<div class="text-red-400/80 text-[12px] py-6 text-center">Gagal: ${esc(e.message)}</div>`; }
+}
+
+async function loadTopArtists() {
+  const row = document.getElementById("artistsRow");
+  if (!apiClient) { row.innerHTML = `<div class="shrink-0 text-red-400/70 text-[12px] py-4">API client tidak siap</div>`; return; }
+  try {
+    const data = await apiClient.searchArtists("indonesia");
+    const artists = (data.collection || []).filter(a => a && a.username).slice(0, 12);
+    if (!artists.length) { row.innerHTML = `<div class="shrink-0 text-white/35 text-[12px] py-4">Artis tidak tersedia</div>`; return; }
+    row.innerHTML = artists.map((a, idx) => {
+      const art = a.avatar_url;
+      const hue1 = (idx * 55) % 360, hue2 = (hue1 + 45) % 360;
+      return `
+        <button onclick="openArtist('${esc(a.username).replace(/'/g, "\\'")}')" class="fadeUp tap shrink-0 w-[104px] text-center">
+          <div class="relative w-[104px] h-[104px] rounded-full overflow-hidden border border-white/[0.07]" style="${art ? '' : `background:linear-gradient(135deg,hsl(${hue1},70%,45%) 0%,hsl(${hue2},60%,25%) 100%)`}">
+            ${art ? `<img src="${art}" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
+          </div>
+          <h4 class="text-[12px] font-semibold mt-[8px] truncate">${esc(a.username)}</h4>
+          <p class="text-[9.5px] text-white/35 uppercase tracking-[0.1em] mt-[2px] truncate">${a.followers_count ? fmtCount(a.followers_count) + ' flw' : 'Artist'}</p>
+        </button>
+      `;
+    }).join("");
+    lucide.createIcons();
+  } catch (e) { row.innerHTML = `<div class="shrink-0 text-red-400/70 text-[12px] py-4">Gagal: ${esc(e.message)}</div>`; }
+}
+
+async function openArtist(name) {
+  toast("Memuat: " + name);
+  switchView("home");
+  document.getElementById("picksTitle").textContent = "Lagu: " + name;
+  const grid = document.getElementById("quickPicksGrid");
+  grid.innerHTML = `<div class="flex justify-center py-10"><div class="spinner"></div></div>`;
+  try {
+    const data = await apiClient.search(name);
+    const tracks = (data.collection || []).filter(t => t && t.title);
+    state.tracks = tracks;
+    renderTrackList(tracks, "quickPicksGrid");
+    document.getElementById("picksTitle").scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (e) { grid.innerHTML = `<div class="text-red-400/80 text-[12px] py-6 text-center">Gagal: ${esc(e.message)}</div>`; }
+}
+
+/* ============================================================
+   RECENT
+============================================================ */
+function renderRecent() {
+  const c = document.getElementById("recentCard");
+  if (!state.recent) {
+    c.innerHTML = `
+      <div class="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-[14px] flex items-center gap-[12px]">
+        <div class="w-[52px] h-[52px] rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
+          <i data-lucide="music" class="w-[20px] h-[20px] text-white/25"></i>
+        </div>
+        <div class="flex-1">
+          <h4 class="text-[13.5px] font-semibold">Belum ada lagu diputar</h4>
+          <p class="text-[11px] text-white/45 mt-[3px]">Cari lagu atau pilih dari rekomendasi</p>
+        </div>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+  const t = state.recent;
+  const art = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+  const playing = state.currentTrack && state.currentTrack.id === t.id;
+  c.innerHTML = `
+    <div onclick="playRecent()" class="tap cursor-pointer rounded-2xl border border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.045] transition p-[12px] flex items-center gap-[12px]">
+      <img src="${art}" class="w-[52px] h-[52px] rounded-xl object-cover border border-white/[0.06] shrink-0" onerror="this.src='${DEFAULT_ART}'">
+      <div class="flex-1 min-w-0">
+        <h4 class="text-[13.5px] font-semibold truncate">${esc(t.title)}</h4>
+        <p class="text-[11px] text-white/45 truncate mt-[3px]">${esc((t.user && t.user.username) || "Unknown")}</p>
+      </div>
+      <div class="w-[38px] h-[38px] rounded-full ${playing ? 'accent-bg' : 'bg-white/[0.06] border border-white/[0.08]'} flex items-center justify-center shrink-0">
+        <i data-lucide="${playing ? 'pause' : 'play'}" class="w-[15px] h-[15px] ${playing ? 'fill-white text-white' : 'fill-white/70 text-white/70 ml-[1px]'}"></i>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+
+function playRecent() {
+  if (!state.recent) return;
+  const idx = state.tracks.findIndex(t => t.id === state.recent.id);
+  if (idx >= 0) playTrack(idx);
+  else { state.tracks.unshift(state.recent); playTrack(0); }
+}
+
+/* ============================================================
+   PLAYER
+============================================================ */
+async function playTrack(idx, opts = {}) {
+  const t = state.tracks[idx];
+  if (!t) return;
+  if (t.streamable === false) { toast('Lagu ini tidak bisa diputar'); return; }
+
+  recoveringStream = false;
+  if (!opts.isRetry) retryCount = 0;
+  const myToken = ++hlsToken;
+  state.currentIndex = idx;
+  state.currentTrack = t;
+  if (typeof window.spUpdateMediaSession === "function") window.spUpdateMediaSession(t);
+
+  document.getElementById("miniPlayer").classList.remove("hidden");
+  document.getElementById("miniPlayer").style.display = "";
+  document.getElementById("miniTitle").textContent = t.title || "Unknown";
+  document.getElementById("miniArtist").textContent = (t.user && t.user.username) || "Unknown";
+  document.getElementById("miniArt").src = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+
+  const art = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+  document.getElementById("fullTitle").textContent = t.title || "Unknown";
+  document.getElementById("fullArtist").textContent = (t.user && t.user.username) || "Unknown";
+  document.getElementById("fullArtistTop").textContent = (t.user && t.user.username) || "Unknown";
+  document.getElementById("fullArt").src = art;
+  document.getElementById("lyricArt").src = art;
+  document.getElementById("lyricTitle").textContent = t.title || "—";
+  document.getElementById("lyricArtist").textContent = (t.user && t.user.username) || "—";
+  document.getElementById("playerAmbient").style.backgroundImage = `url('${art}')`;
+  document.getElementById("fullLyricArt").src = art;
+  document.getElementById("fullLyricTitle").textContent = t.title || "—";
+  document.getElementById("fullLyricArtist").textContent = (t.user && t.user.username) || "—";
+
+  state.recent = t;
+  localStorage.setItem("sp_recent", JSON.stringify(t));
+  renderRecent();
+
+  let offBlob = null;
+  try { offBlob = await offGet(t.id); } catch {}
+  if (myToken !== hlsToken) return;
+  if (offBlob) {
+    if (hlsPlayer) { try { hlsPlayer.destroy(); } catch {} hlsPlayer = null; }
+    if (offUrl) URL.revokeObjectURL(offUrl);
+    offUrl = URL.createObjectURL(offBlob);
+    audio.src = offUrl;
+    if (opts.resumeAt > 0) {
+      audio.addEventListener("loadedmetadata", () => { try { audio.currentTime = opts.resumeAt; } catch {} }, { once: true });
+    }
+    audio.play().catch(err => {
+      if (err.name === "AbortError") return;
+      if (myToken === hlsToken) toast("Gagal putar: " + err.message);
+    });
+    setPlayIcon(true);
+    updateHeartUI(t.id);
+    updateDownloadUI(t.id);
+    resetLyrics();
+    fetchLyrics();
+    if (state.view === "home") renderTrackList(state.tracks, "quickPicksGrid");
+    if (state.view === "liked") renderLiked();
+    if (state.view === "offline") renderOffline();
+    return;
+  }
+
+  let raw = null;
+  if (apiClient && typeof apiClient.getStreamUrl === "function") raw = apiClient.getStreamUrl(t);
+  if (!raw) { toast('Stream tidak tersedia'); return; }
+  let clientId = apiClient.clientId;
+  if (!clientId) {
+    try { clientId = await apiClient.getCredentials(); }
+    catch { toast("Gagal ambil kredensial. Coba lagi."); return; }
+    if (myToken !== hlsToken) return;
+  }
+  let streamUrl = `/api/stream?url=${encodeURIComponent(raw)}&client_id=${encodeURIComponent(clientId)}`;
+  if (t.track_authorization) streamUrl += `&track_authorization=${encodeURIComponent(t.track_authorization)}`;
+
+  if (hlsPlayer) { try { hlsPlayer.destroy(); } catch {} hlsPlayer = null; }
+
+  const needHls = raw.includes("hls") || t.stream_type === "hls";
+
+  if (needHls && typeof Hls !== "undefined" && Hls.isSupported()) {
+    hlsPlayer = new Hls({
+      startPosition: opts.resumeAt > 0 ? opts.resumeAt : -1,
+      maxBufferLength: 60,
+      maxMaxBufferLength: 120,
+      maxBufferSize: 60 * 1000 * 1000,
+      enableWorker: true,
+      lowLatencyMode: false,
+      manifestLoadingMaxRetry: 6,
+      manifestLoadingRetryDelay: 500,
+      manifestLoadingMaxRetryTimeout: 8000,
+      levelLoadingMaxRetry: 6,
+      levelLoadingRetryDelay: 500,
+      levelLoadingMaxRetryTimeout: 8000,
+      fragLoadingMaxRetry: 8,
+      fragLoadingRetryDelay: 500,
+      fragLoadingMaxRetryTimeout: 10000,
+      appendErrorMaxRetry: 5,
+    });
+
+    hlsPlayer.loadSource(streamUrl);
+    hlsPlayer.attachMedia(audio);
+
+    hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
+      if (myToken !== hlsToken) return;
+      audio.play().catch(err => { if (myToken === hlsToken) toast("Gagal putar: " + err.message); });
+    });
+
+    hlsPlayer.on(Hls.Events.ERROR, (e, data) => {
+      if (myToken !== hlsToken) return;
+      if (!data.fatal) return;
+
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        toast("Koneksi lambat, reconnect...");
+        setTimeout(() => {
+          if (myToken !== hlsToken) return;
+          try { hlsPlayer.startLoad(); } catch {}
+        }, 800);
+      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        try { hlsPlayer.recoverMediaError(); } catch {}
+      } else {
+        toast("Stream mati, skip...");
+        setTimeout(() => {
+          if (myToken !== hlsToken) return;
+          playNext();
+        }, 1200);
+      }
+    });
+
+  } else {
+    audio.src = streamUrl;
+    if (opts.resumeAt > 0) {
+      audio.addEventListener("loadedmetadata", () => { try { audio.currentTime = opts.resumeAt; } catch {} }, { once: true });
+    }
+    audio.play().catch(err => {
+      if (err.name === "AbortError") return;
+      if (myToken === hlsToken) toast("Gagal putar: " + err.message);
+    });
+  }
+
+  setPlayIcon(true);
+  updateHeartUI(t.id);
+  updateDownloadUI(t.id);
+  resetLyrics();
+  fetchLyrics();
+  if (state.view === "home") renderTrackList(state.tracks, "quickPicksGrid");
+  if (state.view === "liked") renderLiked();
+  if (state.view === "offline") renderOffline();
+}
+
+function togglePlay() {
+  if (!audio.src && !hlsPlayer) return;
+  if (audio.paused) { audio.play().catch(() => {}); setPlayIcon(true); }
+  else { audio.pause(); setPlayIcon(false); }
+}
+
+function setPlayIcon(playing) {
+  const icon = playing ? "pause" : "play";
+  const miniIcon = document.getElementById("miniPlayIcon");
+  const fullIcon = document.getElementById("fullPlayIcon");
+  if (miniIcon) miniIcon.setAttribute("data-lucide", icon);
+  if (fullIcon) fullIcon.setAttribute("data-lucide", icon);
+  lucide.createIcons();
+}
+
+function playNext() {
+  if (!state.tracks.length) return;
+  if (state.shuffle) {
+    let next;
+    do { next = Math.floor(Math.random() * state.tracks.length); }
+    while (state.tracks.length > 1 && next === state.currentIndex);
+    playTrack(next);
+    return;
+  }
+  if (state.currentIndex + 1 < state.tracks.length) playTrack(state.currentIndex + 1);
+  else if (state.repeat === "all") playTrack(0);
+}
+
+function playPrev() {
+  if (state.currentIndex > 0) playTrack(state.currentIndex - 1);
+}
+
+function closePlayer() {
+  audio.pause();
+  audio.src = "";
+  if (hlsPlayer) { try { hlsPlayer.destroy(); } catch {} hlsPlayer = null; }
+  document.getElementById("miniPlayer").classList.add("hidden");
+  state.currentTrack = null;
+  setPlayIcon(false);
+  renderRecent();
+  if (state.view === "home") renderTrackList(state.tracks, "quickPicksGrid");
+}
+
+function openFullPlayer() {
+  if (!state.currentTrack) return toast('Belum ada lagu diputar');
+  document.getElementById("fullPlayer").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+
+function closeFullPlayer() {
+  document.getElementById("fullPlayer").classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+function switchPlayerTab(tab) {
+  const cover = document.getElementById("panelCover");
+  const lyrics = document.getElementById("panelLyrics");
+  const tabCover = document.getElementById("tabCover");
+  const tabLyrics = document.getElementById("tabLyrics");
+
+  if (tab === "cover") {
+    cover.classList.remove("hidden");
+    lyrics.classList.add("hidden");
+    tabCover.className = "px-[26px] py-[8px] rounded-full text-[12.5px] font-semibold bg-white/[0.14] transition";
+    tabLyrics.className = "px-[26px] py-[8px] rounded-full text-[12.5px] font-medium text-white/60 transition";
+  } else {
+    cover.classList.add("hidden");
+    lyrics.classList.remove("hidden");
+    tabLyrics.className = "px-[26px] py-[8px] rounded-full text-[12.5px] font-semibold bg-white/[0.14] transition";
+    tabCover.className = "px-[26px] py-[8px] rounded-full text-[12.5px] font-medium text-white/60 transition";
+    ensureLyrics();
+  }
+}
+
+let lyricReq = 0;
+
+function resetLyrics() {
+  lyricReq++;
+  state.lyricLines = [];
+  state.lyricTimes = null;
+  state.lyricEnds = null;
+  state.lyricGap = null;
+  state.lyricStarts = null;
+  state.lyricWeights = null;
+  state.lyricTotalW = 0;
+  state._lyricEls = null;
+  state.lyricSynced = false;
+  state.lyricLoadingFor = null;
+  state.currentLyricLine = -1;
+  state.lyricOffset = 0;
+  const c = document.getElementById("lyricContent");
+  if (c) c.innerHTML = `<div class="flex justify-center py-6"><div class="spinner"></div></div>`;
+  const fc = document.getElementById("fullLyricContent");
+  if (fc) fc.textContent = "";
+}
+
+// Muat hanya kalau belum ada, belum sedang dimuat, dan belum tampil kotak cari manual
+function ensureLyrics() {
+  if (state.lyricLines.length) {
+    if (!state._lyricEls) renderLyricLines();
+    startLyricLoop();
+    setTimeout(() => scrollLyricsToActive(true), 30);
+    return;
+  }
+  if (state.lyricLoadingFor || document.getElementById("lyricManualInput")) return;
+  fetchLyrics();
+}
+
+function lyricNotFoundHTML(prefill) {
+  return `<div class="text-center text-white/55 pt-8 pb-4 text-[13px]">Lirik belum ketemu otomatis.<br><span class="text-white/35 text-[12px]">Coba cari manual pakai artis &amp; judul:</span></div>
+    <div class="flex gap-2 px-2 pb-6">
+      <input id="lyricManualInput" type="text" value="${esc(prefill || "")}" placeholder="contoh: tulus hati hati di jalan"
+        onkeypress="if(event.key==='Enter')searchLyricsManual()"
+        class="flex-1 min-w-0 bg-white/[0.06] border border-white/[0.1] rounded-2xl px-[14px] py-[10px] text-[13px] focus:outline-none focus:border-[#328f83]/60">
+      <button onclick="searchLyricsManual()" class="px-4 rounded-2xl accent-bg font-bold text-[13px] tap">Cari</button>
+    </div>`;
+}
+
+function searchLyricsManual() {
+  const q = (document.getElementById("lyricManualInput")?.value || "").trim();
+  if (q.length < 3) return toast("Ketik artis dan judul lagunya");
+  fetchLyrics(q);
+}
+
+async function fetchLyrics(manual) {
+  const t = state.currentTrack;
+  if (!t) return;
+  if (!manual && state.lyricLines.length) { renderLyricLines(); return; }
+  if (!manual && state.lyricLoadingFor === t.id) return;
+
+  const myReq = ++lyricReq;
+  state.lyricLoadingFor = t.id;
+  const c = document.getElementById("lyricContent");
+  c.innerHTML = `<div class="flex justify-center py-6"><div class="spinner"></div></div>`;
+  const fc = document.getElementById("fullLyricContent");
+
+  const dur = Math.round((t.duration || (audio.duration ? audio.duration * 1000 : 0)) / 1000);
+  const qs = new URLSearchParams({ title: t.title || "", artist: (t.user && t.user.username) || "", duration: String(dur || 0) });
+  if (manual) qs.set("q", manual);
+
+  try {
+    const r = await fetch("/api/lyrics?" + qs.toString());
+    const d = await r.json();
+    if (myReq !== lyricReq) return; // lagu sudah ganti
+    if (!d.success || !Array.isArray(d.lines) || !d.lines.length) throw new Error("kosong");
+
+    const plain = d.lines.map(l => l.text);
+    if (d.synced) {
+      const built = buildSyncedLyrics(d.lines);
+      state.lyricLines = built.texts;
+      state.lyricTimes = built.times;
+      state.lyricEnds = built.ends;
+      state.lyricGap = built.gap;
+    } else {
+      state.lyricLines = plain;
+      state.lyricTimes = null; state.lyricEnds = null; state.lyricGap = null;
+    }
+    state.lyricSynced = !!d.synced;
+    state.currentLyricLine = -1;
+    // bobot tiap baris (panjang teks) untuk perkiraan kalau tidak ada timestamp
+    let acc = 0;
+    state.lyricStarts = []; state.lyricWeights = [];
+    for (const line of state.lyricLines) {
+      const w = Math.max(10, line.length);
+      state.lyricStarts.push(acc); state.lyricWeights.push(w); acc += w;
+    }
+    state.lyricTotalW = acc;
+    try { state.lyricOffset = Number(localStorage.getItem("sp_lofs_" + t.id)) || 0; } catch { state.lyricOffset = 0; }
+    if (fc) fc.textContent = plain.join("\n");
+    renderLyricLines();
+    startLyricLoop();
+    if (manual) toast("Lirik ditemukan");
+  } catch {
+    if (myReq !== lyricReq) return;
+    state.lyricLines = [];
+    state.lyricTimes = null;
+    c.innerHTML = lyricNotFoundHTML(manual || cleanForSearch(t));
+    if (fc) fc.textContent = "Lirik tidak tersedia untuk lagu ini.";
+    if (manual) toast("Tetap tidak ketemu, coba kata kunci lain");
+  } finally {
+    if (myReq === lyricReq) state.lyricLoadingFor = null;
+  }
+}
+
+// tebakan awal untuk kolom cari manual
+function cleanForSearch(t) {
+  return String(t.title || "").replace(/[\(\[][^\)\]]*[\)\]]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+// Kira-kira berapa lama baris dinyanyikan bila data akhir baris tidak ada
+function estSingDur(text, gapToNext) {
+  return Math.max(0.8, Math.min(gapToNext - 0.05, Math.max(2, text.length * 0.12)));
+}
+
+// Sisipkan penanda jeda "● ● ●" di bagian instrumental (intro, tengah lagu)
+function buildSyncedLyrics(src) {
+  const texts = [], times = [], ends = [], gap = [];
+  const MIN_GAP = 5; // detik instrumental minimal agar dianggap jeda
+  const push = (text, t, end, isGap) => { texts.push(text); times.push(t); ends.push(end); gap.push(isGap); };
+
+  if (src.length && src[0].t >= MIN_GAP + 1) push("● ● ●", 0.5, src[0].t - 0.2, true);
+
+  for (let i = 0; i < src.length; i++) {
+    const l = src[i], next = src[i + 1];
+    const toNext = next ? next.t - l.t : 6;
+    const end = l.end != null ? Math.min(l.end, l.t + toNext) : l.t + estSingDur(l.text, toNext);
+    push(l.text, l.t, end, false);
+    if (next && next.t - end >= MIN_GAP) push("● ● ●", end + 0.4, next.t - 0.2, true);
+  }
+  return { texts, times, ends, gap };
+}
+
+function renderLyricLines() {
+  const c = document.getElementById("lyricContent");
+  if (!state.lyricLines.length) return;
+  const note = state.lyricSynced ? "" : `<div class="text-[10.5px] text-white/35 pb-2">Lirik tanpa sinkron waktu (perkiraan)</div>`;
+  c.innerHTML = note + state.lyricLines.map((line, i) =>
+    `<div class="lyric-line${state.lyricGap && state.lyricGap[i] ? " lyric-gap" : ""}" data-line="${i}">${esc(line)}</div>`
+  ).join("");
+  state._lyricEls = [...c.querySelectorAll(".lyric-line")];
+}
+
+// Ketuk baris lirik tersinkron -> lompat ke bagian itu
+document.getElementById("lyricContent").addEventListener("click", (e) => {
+  const el = e.target.closest(".lyric-line");
+  if (!el || !state.lyricTimes) return;
+  const i = Number(el.dataset.line);
+  if (!Number.isFinite(i) || state.lyricTimes[i] == null) return;
+  audio.currentTime = Math.max(0, state.lyricTimes[i] - state.lyricOffset - LYRIC_LEAD);
+});
+
+function lyricOffset(delta) {
+  state.lyricOffset = Math.max(-10, Math.min(10, Math.round((state.lyricOffset + delta) * 100) / 100));
+  const t = state.currentTrack;
+  if (t) { try { localStorage.setItem("sp_lofs_" + t.id, String(state.lyricOffset)); } catch {} }
+  const o = state.lyricOffset;
+  toast(o === 0 ? "Sinkron lirik: normal" : "Lirik " + (o > 0 ? "lebih cepat " : "lebih lambat ") + Math.abs(o).toFixed(2) + " dtk");
+}
+
+/* ============================================================
+   LIRIK: loop per frame (±60x/detik) + scroll halus
+============================================================ */
+const LYRIC_LEAD = 0.2;   // tampil sedikit lebih awal supaya terasa pas dengan suara
+let _lastCT = -1, _lastPerf = 0, lyricRaf = 0, lyricScrollAnim = 0, lyricUserScrollUntil = 0;
+
+// currentTime di sebagian browser hanya naik ~4x/detik; interpolasi di antaranya
+function lyricNow() {
+  const ct = audio.currentTime, now = performance.now();
+  if (ct !== _lastCT) { _lastCT = ct; _lastPerf = now; return ct; }
+  if (audio.paused) return ct;
+  return ct + Math.min(0.3, (now - _lastPerf) / 1000) * (audio.playbackRate || 1);
+}
+
+function lyricPanelVisible() {
+  const p = document.getElementById("panelLyrics");
+  return !!p && !p.classList.contains("hidden") && p.offsetParent !== null;
+}
+
+function startLyricLoop() {
+  if (lyricRaf) return;
+  const frame = () => {
+    lyricRaf = 0;
+    if (audio.paused || document.hidden || !state.lyricLines.length || !lyricPanelVisible()) return;
+    updateLyricHighlight();
+    if (!lyricRaf) lyricRaf = requestAnimationFrame(frame); // update bisa sudah mengaktifkan loop; jangan ganda
+  };
+  lyricRaf = requestAnimationFrame(frame);
+}
+
+// indeks terakhir dengan arr[i] <= x
+function lastLE(arr, x) {
+  let lo = 0, hi = arr.length - 1, idx = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid] <= x) { idx = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  return idx;
+}
+
+function scrollLyricsToActive(instant) {
+  const box = document.getElementById("lyricScroll");
+  const el = state._lyricEls && state._lyricEls[state.currentLyricLine];
+  if (!box || !el || box.clientHeight === 0) return;
+  const target = Math.max(0, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2);
+
+  cancelAnimationFrame(lyricScrollAnim);
+  lyricScrollAnim = 0;
+  if (instant) { box.scrollTop = target; return; }
+  if (performance.now() < lyricUserScrollUntil) return; // pengguna sedang scroll sendiri
+
+  let last = performance.now();
+  const step = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const diff = target - box.scrollTop;
+    if (Math.abs(diff) < 1) { box.scrollTop = target; lyricScrollAnim = 0; return; }
+    box.scrollTop += diff * (1 - Math.exp(-dt * 7));
+    lyricScrollAnim = requestAnimationFrame(step);
+  };
+  lyricScrollAnim = requestAnimationFrame(step);
+}
+
+(function initLyricScrollGuards() {
+  const box = document.getElementById("lyricScroll");
+  if (!box) return;
+  const hold = () => { lyricUserScrollUntil = performance.now() + 3000; cancelAnimationFrame(lyricScrollAnim); lyricScrollAnim = 0; };
+  box.addEventListener("wheel", hold, { passive: true });
+  box.addEventListener("touchstart", hold, { passive: true });
+  box.addEventListener("touchmove", hold, { passive: true });
+})();
+
+function updateLyricHighlight() {
+  const total = state.lyricLines.length;
+  if (!total) return;
+
+  const t = lyricNow() + LYRIC_LEAD + state.lyricOffset;
+  let idx, frac;
+
+  if (state.lyricTimes) {
+    const times = state.lyricTimes;
+    idx = lastLE(times, t);
+    const start = times[idx];
+    const end = state.lyricEnds ? state.lyricEnds[idx] : start + 3;
+    // isi warna hanya selama baris itu dinyanyikan; sesudahnya penuh dan menunggu (jeda instrumental)
+    frac = t < start ? 0 : Math.max(0, Math.min(1, (t - start) / Math.max(0.4, end - start)));
+  } else {
+    if (!audio.duration || !isFinite(audio.duration)) return;
+    const dur = audio.duration;
+    const intro = dur > 90 ? 10 : 3, outro = dur > 90 ? 8 : 2;
+    const span = Math.max(10, dur - intro - outro);
+    const pos = Math.max(0, Math.min(1, (t - intro) / span)) * state.lyricTotalW;
+    idx = lastLE(state.lyricStarts, pos);
+    frac = Math.max(0, Math.min(1, (pos - state.lyricStarts[idx]) / state.lyricWeights[idx]));
+  }
+
+  const lines = state._lyricEls || [];
+  if (idx !== state.currentLyricLine) {
+    state.currentLyricLine = idx;
+    lines.forEach((el, i) => {
+      const d = Math.abs(i - idx);
+      el.classList.toggle("active", d === 0);
+      el.classList.toggle("near", d === 1);
+      el.classList.toggle("far", d > 1);
+      el.style.removeProperty("--p");
+    });
+    if (lyricPanelVisible()) scrollLyricsToActive(false);
+  }
+  const cur = lines[idx];
+  if (cur) cur.style.setProperty("--p", (frac * 100).toFixed(1) + "%");
+
+  // pastikan loop per-frame hidup selama lagu berjalan dan panel terlihat
+  if (!lyricRaf && !audio.paused && lyricPanelVisible()) startLyricLoop();
+}
+
+function showFullLyrics() {
+  const modal = document.getElementById("fullLyricsModal");
+  modal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  ensureLyrics();
+}
+
+function closeFullLyrics() {
+  document.getElementById("fullLyricsModal").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+
+function seekTo(pct) {
+  if (!audio.duration || !isFinite(audio.duration)) return;
+  audio.currentTime = (pct / 100) * audio.duration;
+}
+
+function setVolume(v) {
+  audio.volume = v / 100;
+  audio.muted = false;
+  const icon = document.getElementById("volumeIcon");
+  if (icon) icon.setAttribute("data-lucide", v == 0 ? "volume-x" : v < 50 ? "volume-1" : "volume-2");
+  lucide.createIcons();
+}
+
+function toggleMute() {
+  audio.muted = !audio.muted;
+  const icon = document.getElementById("volumeIcon");
+  if (icon) icon.setAttribute("data-lucide", audio.muted ? "volume-x" : "volume-2");
+  lucide.createIcons();
+  toast(audio.muted ? "Mute" : "Unmute");
+}
+
+function toggleShuffle() {
+  state.shuffle = !state.shuffle;
+  document.getElementById("shuffleBtn").classList.toggle("text-[#79c9b8]", state.shuffle);
+  document.getElementById("shuffleBtn").classList.toggle("text-white/60", !state.shuffle);
+  toast(state.shuffle ? "Shuffle ON" : "Shuffle OFF");
+}
+
+function toggleRepeat() {
+  const modes = ["off", "all", "one"];
+  state.repeat = modes[(modes.indexOf(state.repeat) + 1) % modes.length];
+  const btn = document.getElementById("repeatBtn");
+  btn.classList.toggle("text-[#79c9b8]", state.repeat !== "off");
+  btn.classList.toggle("text-white/60", state.repeat === "off");
+  toast("Repeat: " + state.repeat.toUpperCase());
+}
+
+audio.addEventListener("timeupdate", () => {
+  if (audio.duration && isFinite(audio.duration)) {
+    const pct = (audio.currentTime / audio.duration) * 100;
+    const ring = document.getElementById("miniRing");
+    if (ring) ring.style.strokeDashoffset = 138.2 * (1 - pct / 100);
+    const fp = document.getElementById("fullProgress");
+    fp.value = pct; fp.style.setProperty("--pct", pct + "%");
+    document.getElementById("timeCurrent").textContent = fmtTime(audio.currentTime);
+    document.getElementById("timeTotal").textContent = fmtTime(audio.duration);
+    updateLyricHighlight();
+  }
+});
+
+audio.addEventListener("ended", () => {
+  if (state.repeat === "one") { audio.currentTime = 0; audio.play(); return; }
+  playNext();
+});
+
+audio.addEventListener("playing", () => { retryCount = 0; startLyricLoop(); });
+audio.addEventListener("seeked", () => { if (state.lyricLines.length) { updateLyricHighlight(); scrollLyricsToActive(true); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) startLyricLoop(); });
+
+audio.addEventListener("error", async () => {
+  if (hlsPlayer) return;
+  if (recoveringStream) return;
+  if (!audio.getAttribute("src")) return;
+  if (!state.currentTrack || state.currentIndex < 0) return;
+  if (retryCount >= MAX_RETRY) {
+    retryCount = 0;
+    toast("Lagu ini gagal diputar. Coba lagu lain.");
+    setPlayIcon(false);
+    return;
+  }
+  retryCount++;
+  recoveringStream = true;
+  toast("Stream putus, refreshing...");
+  const idx = state.currentIndex;
+  const resumeAt = audio.currentTime || 0;
+  try {
+    if (apiClient) { apiClient.clientId = null; await apiClient.getCredentials(true); }
+  } catch {}
+  setTimeout(() => {
+    recoveringStream = false;
+    playTrack(idx, { isRetry: true, resumeAt });
+  }, 700);
+});
+
+window.spRecoverStream = function () {
+  if (state.currentIndex < 0 || recoveringStream) return;
+  if (hlsPlayer) { try { hlsPlayer.startLoad(); } catch {} return; }
+  if (retryCount >= MAX_RETRY) return;
+  retryCount++;
+  playTrack(state.currentIndex, { isRetry: true, resumeAt: audio.currentTime || 0 });
+};
+
+audio.addEventListener("play", () => setPlayIcon(true));
+audio.addEventListener("pause", () => setPlayIcon(false));
+
+/* ============================================================
+   LIKES + DOWNLOADS
+============================================================ */
+function toggleLikeById(trackId) {
+  const t = state.currentTrack && state.currentTrack.id === trackId
+    ? state.currentTrack
+    : state.tracks.find(x => x.id == trackId) || state.likes.find(x => x.id == trackId);
+  if (!t) return;
+  const idx = state.likes.findIndex(i => i.id === t.id);
+  if (idx >= 0) { state.likes.splice(idx, 1); toast('Dihapus dari Disukai'); }
+  else { state.likes.push(t); toast('Ditambahkan ke Disukai'); }
+  localStorage.setItem("sp_likes", JSON.stringify(state.likes));
+  updateHeartUI(t.id);
+  if (state.view === "home") renderTrackList(state.tracks, "quickPicksGrid");
+  if (state.view === "liked") renderLiked();
+  if (state.view === "search") renderSearch();
+}
+
+function toggleLikeCurrent() {
+  if (!state.currentTrack) return toast('Belum ada lagu');
+  toggleLikeById(state.currentTrack.id);
+}
+
+function updateHeartUI(trackId) {
+  const liked = state.likes.some(i => i.id === trackId);
+  const mini = document.getElementById("miniHeartIcon");
+  const full = document.getElementById("fullHeartIcon");
+  if (mini) {
+    mini.classList.toggle("fill-current", liked);
+    mini.classList.toggle("text-rose-500", liked);
+    mini.classList.toggle("text-white/55", !liked);
+  }
+  if (full) {
+    full.classList.toggle("fill-current", liked);
+    full.classList.toggle("text-rose-500", liked);
+    full.classList.toggle("text-white/75", !liked);
+  }
+}
+
+const _dlBusy = new Set();
+async function downloadTrackById(trackId) {
+  const t = state.tracks.find(x => x.id == trackId)
+    || state.downloaded.find(x => x.id == trackId)
+    || (state.currentTrack && state.currentTrack.id == trackId ? state.currentTrack : null);
+  if (!t) return;
+  if (_dlBusy.has(t.id)) return toast("Sedang mengunduh, tunggu sebentar...");
+
+  let hasBlob = false;
+  try { hasBlob = !!(await offGet(t.id)); } catch {}
+
+  if (hasBlob) {
+    try { await offDel(t.id); } catch {}
+    state.downloaded = state.downloaded.filter(d => d.id !== t.id);
+    toast("Dihapus dari Offline");
+  } else {
+    const raw = apiClient.getStreamUrl(t);
+    if (!raw || raw.includes("hls") || t.stream_type === "hls") {
+      return toast("Lagu ini tidak bisa disimpan offline");
+    }
+    _dlBusy.add(t.id);
+    try {
+      const cid = apiClient.clientId || await apiClient.getCredentials();
+      let url = `/api/stream?url=${encodeURIComponent(raw)}&client_id=${encodeURIComponent(cid)}`;
+      if (t.track_authorization) url += `&track_authorization=${encodeURIComponent(t.track_authorization)}`;
+      let lastStep = -1;
+      const prog = p => { const step = Math.floor(p * 10); if (step !== lastStep) { lastStep = step; toast("Mengunduh " + Math.round(p * 100) + "%"); } };
+      toast("Mengunduh...");
+      let blob;
+      try { blob = await fetchAudioBlob(url, prog); }
+      catch { blob = await fetchAudioBlob(url + "&proxy=1", prog); }
+      await offPut(t.id, blob);
+      if (!state.downloaded.some(d => d.id === t.id)) state.downloaded.push(t);
+      toast('"' + t.title + '" tersimpan offline');
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch {}
+    } catch (e) {
+      toast("Gagal unduh: " + e.message);
+    } finally {
+      _dlBusy.delete(t.id);
+    }
+  }
+  localStorage.setItem("sp_downloaded", JSON.stringify(state.downloaded));
+  refreshOfflineCount();
+  updateDownloadUI(t.id);
+  if (state.view === "home") renderTrackList(state.tracks, "quickPicksGrid");
+  if (state.view === "offline") renderOffline();
+  if (state.view === "search") renderSearch();
+}
+
+function downloadCurrent() {
+  if (!state.currentTrack) return toast('Belum ada lagu');
+  downloadTrackById(state.currentTrack.id);
+}
+
+function updateDownloadUI(trackId) {
+  const dl = state.downloaded.some(d => d.id === trackId);
+  const icon = document.getElementById("fullDownloadIcon");
+  if (icon) {
+    icon.setAttribute("data-lucide", dl ? "check-circle" : "download");
+    icon.classList.toggle("fill-current", dl);
+    icon.classList.toggle("text-green-400", dl);
+    icon.classList.toggle("text-white/75", !dl);
+  }
+  const dlBtn = document.getElementById("fullDownloadBtn");
+  if (dlBtn) dlBtn.classList.toggle("dl-on", dl);
+  lucide.createIcons();
+}
+
+function renderLiked() {
+  document.getElementById("likedCount").textContent = state.likes.length + " lagu";
+  const el = document.getElementById("likedList");
+  if (!state.likes.length) {
+    el.innerHTML = `
+      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-8 text-center">
+        <div class="w-[56px] h-[56px] mx-auto mb-3 rounded-2xl bg-white/[0.04] flex items-center justify-center">
+          <i data-lucide="heart" class="w-[24px] h-[24px] text-white/40"></i>
+        </div>
+        <h3 class="text-[14px] font-bold mb-1">Belum Ada Lagu Disukai</h3>
+        <p class="text-[11.5px] text-white/45">Tap ikon hati di lagu untuk menyukai.</p>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+  state.tracks = state.likes.slice();
+  renderTrackList(state.likes, "likedList");
+}
+
+/* ============================================================
+   SEARCH
+============================================================ */
+let lastSearchQuery = "";
+function handleSearchKey(e) {
+  if (e.key !== 'Enter') return;
+  const q = (document.getElementById("searchInput").value || "").trim();
+  if (!q) return;
+  lastSearchQuery = q;
+  doSearch(q);
+}
+
+function switchSearchTab(type, btn) {
+  state.searchType = type;
+  document.querySelectorAll(".search-tab").forEach(b => {
+    b.className = "search-tab pill shrink-0 px-[16px] py-[7px] rounded-full text-[12px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70";
+  });
+  btn.className = "search-tab pill shrink-0 px-[16px] py-[7px] rounded-full text-[12px] font-semibold accent-bg text-white";
+  if (lastSearchQuery) doSearch(lastSearchQuery);
+}
+
+let lastSearchData = [];
+let lastSearchPlaylists = [];
+let searchRunId = 0;
+
+function searchPlaylistCard(p, idx, inGrid = false) {
+  const art = p.artwork_url || (p.user && p.user.avatar_url) || DEFAULT_ART;
+  const creator = (p.user && p.user.username) || "Unknown";
+  return `
+    <button data-playlist-id="${esc(p.id)}" data-playlist-title="${esc(p.title)}"
+      onclick="openPlaylist(this.dataset.playlistId,this.dataset.playlistTitle)"
+      class="search-playlist-card playlist-row tap ${inGrid ? 'w-full' : 'shrink-0 w-[138px]'} p-[9px] text-left">
+      <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-white/[0.05]">
+        <img src="${esc(art)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.src='${DEFAULT_ART}'">
+        <span class="absolute bottom-2 left-2 text-[9px] font-bold text-white bg-black/65 px-2 py-1 rounded-full">${Number(p.track_count) || 0} lagu</span>
+      </div>
+      <p class="text-[12px] font-semibold mt-2 truncate">${esc(p.title)}</p>
+      <p class="text-[10.5px] text-white/45 mt-1 truncate">${esc(creator)}</p>
+    </button>`;
+}
+
+function renderSearchPlaylists(playlists, targetId) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  if (!playlists.length) {
+    target.innerHTML = `<p class="text-[11px] text-white/35 py-3">Belum ada playlist terkait untuk pencarian ini.</p>`;
+    return;
+  }
+  target.innerHTML = `<div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">${playlists.map(searchPlaylistCard).join("")}</div>`;
+}
+
+async function doSearch(q) {
+  const runId = ++searchRunId;
+  const el = document.getElementById("searchResults");
+  el.innerHTML = `<div class="flex justify-center py-10"><div class="spinner"></div></div>`;
+  if (!apiClient) { el.innerHTML = `<div class="text-red-400/70 text-[12px] py-6 text-center">API client tidak siap</div>`; return; }
+
+  try {
+    if (state.searchType === "tracks") {
+      const [trackResult, playlistResult] = await Promise.allSettled([
+        apiClient.search(q),
+        apiClient.searchPlaylists(q),
+      ]);
+      if (runId !== searchRunId) return;
+      lastSearchData = trackResult.status === "fulfilled"
+        ? (trackResult.value.collection || []).filter(t => t && t.title)
+        : [];
+      lastSearchPlaylists = playlistResult.status === "fulfilled"
+        ? (playlistResult.value.collection || []).filter(p => p && p.id && p.title).slice(0, 8)
+        : [];
+      if (!lastSearchData.length && !lastSearchPlaylists.length) {
+        const error = trackResult.status === "rejected" ? trackResult.reason : playlistResult.reason;
+        el.innerHTML = `<div class="text-white/45 text-[12px] py-10 text-center">${error ? `Pencarian gagal: ${esc(error.message || error)}` : `Tidak ada hasil untuk “${esc(q)}”`}</div>`;
+        return;
+      }
+      el.innerHTML = `
+        <section class="mb-7">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-[14px] font-bold">Lagu</h2>
+            <span class="text-[11px] text-white/40">${lastSearchData.length} hasil</span>
+          </div>
+          <div id="searchTrackRows" class="space-y-2"></div>
+        </section>
+        <section>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-[14px] font-bold">Playlist terkait</h2>
+            <button onclick="switchSearchTab('playlists',document.querySelector('.search-tab[data-type=playlists]'))" class="text-[11px] text-white/45 hover:text-white">Lihat semua</button>
+          </div>
+          <div id="searchPlaylistRows"></div>
+        </section>`;
+      if (lastSearchData.length) {
+        state.tracks = lastSearchData;
+        renderTrackList(lastSearchData, "searchTrackRows");
+      } else {
+        document.getElementById("searchTrackRows").innerHTML = `<p class="text-[11px] text-white/35 py-3">Lagu tidak ditemukan.</p>`;
+      }
+      renderSearchPlaylists(lastSearchPlaylists, "searchPlaylistRows");
+    } else {
+      const data = state.searchType === "playlists"
+        ? await apiClient.searchPlaylists(q)
+        : await apiClient.searchArtists(q);
+      if (runId !== searchRunId) return;
+      const items = (data.collection || []).filter(Boolean);
+      lastSearchData = state.searchType === "playlists" ? [] : items;
+      lastSearchPlaylists = state.searchType === "playlists" ? items : [];
+      if (!items.length) { el.innerHTML = `<div class="text-white/40 text-[12px] py-10 text-center">Tidak ada hasil untuk “${esc(q)}”</div>`; return; }
+      if (state.searchType === "playlists") {
+        el.innerHTML = `<div class="grid grid-cols-2 gap-3">${items.map((p, i) => searchPlaylistCard(p, i, true)).join("")}</div>`;
+      } else {
+        el.innerHTML = items.map(a => `
+          <button data-artist="${esc(a.username)}" onclick="openArtist(this.dataset.artist)"
+            class="tap w-full text-left rounded-2xl border border-white/[0.06] bg-white/[0.025] hover:bg-white/[0.045] p-[10px] flex items-center gap-[12px]">
+            <img src="${esc(a.avatar_url || DEFAULT_ART)}" class="w-[52px] h-[52px] rounded-full object-cover" onerror="this.src='${DEFAULT_ART}'">
+            <span class="flex-1 min-w-0">
+              <span class="block text-[13px] font-semibold truncate">${esc(a.username || "Artis")}</span>
+              <span class="block text-[11px] text-white/45 truncate mt-[2px]">${a.followers_count ? fmtCount(a.followers_count) + " followers" : "Artis"}</span>
+            </span>
+          </button>`).join("");
+      }
+    }
+    lucide.createIcons();
+  } catch (e) {
+    if (runId !== searchRunId) return;
+    el.innerHTML = `<div class="text-red-400/80 text-[12px] py-6 text-center">Gagal: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderSearch() {
+  if (state.searchType === "tracks" && (lastSearchData.length || lastSearchPlaylists.length)) {
+    const el = document.getElementById("searchResults");
+    el.innerHTML = `
+      <section class="mb-7">
+        <div class="flex items-center justify-between mb-3"><h2 class="text-[14px] font-bold">Lagu</h2><span class="text-[11px] text-white/40">${lastSearchData.length} hasil</span></div>
+        <div id="searchTrackRows" class="space-y-2"></div>
+      </section>
+      <section><div class="flex items-center justify-between mb-3"><h2 class="text-[14px] font-bold">Playlist terkait</h2>
+        <button onclick="switchSearchTab('playlists',document.querySelector('.search-tab[data-type=playlists]'))" class="text-[11px] text-white/45">Lihat semua</button></div>
+        <div id="searchPlaylistRows"></div></section>`;
+    if (lastSearchData.length) {
+      state.tracks = lastSearchData;
+      renderTrackList(lastSearchData, "searchTrackRows");
+    } else document.getElementById("searchTrackRows").innerHTML = `<p class="text-[11px] text-white/35 py-3">Lagu tidak ditemukan.</p>`;
+    renderSearchPlaylists(lastSearchPlaylists, "searchPlaylistRows");
+  }
+}
+
+/* ============================================================
+   LIBRARY
+============================================================ */
+let libTab = "playlists";
+function switchLibTab(tab, btn) {
+  libTab = tab;
+  activePlaylistId = null;
+  document.querySelectorAll(".lib-tab").forEach(b => {
+    b.className = "lib-tab flex-1 py-[9px] rounded-full text-[12px] font-medium bg-white/[0.05] border border-white/[0.08] text-white/70";
+  });
+  if (btn) btn.className = "lib-tab flex-1 py-[9px] rounded-full text-[12px] font-semibold accent-bg";
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const el = document.getElementById("libraryContent");
+  if (libTab === "playlists") {
+    if (activePlaylistId) {
+      const playlist = state.playlists.find(p => p.id === activePlaylistId);
+      if (!playlist) activePlaylistId = null;
+      else {
+        state.tracks = playlist.tracks;
+        el.innerHTML = `
+          <div class="mb-4">
+            <button onclick="closeSavedPlaylist()" class="text-[12px] text-white/50 flex items-center gap-1 mb-4 tap">
+              <i data-lucide="chevron-left" class="w-[16px] h-[16px]"></i> Semua playlist
+            </button>
+            <div class="flex items-end gap-4 mb-5">
+              <div class="w-[76px] h-[76px] rounded-2xl accent-bg flex items-center justify-center shrink-0"><i data-lucide="list-music" class="w-[30px] h-[30px]"></i></div>
+              <div class="min-w-0"><p class="text-[10px] uppercase tracking-wider text-white/45">Playlist kamu</p>
+                <h2 class="text-[22px] leading-tight font-extrabold truncate mt-1">${esc(playlist.name)}</h2>
+                <p class="text-[11px] text-white/45 mt-1">${playlist.tracks.length} lagu</p></div>
+            </div>
+            <div class="flex items-center gap-2 mb-5">
+              <button onclick="playSavedPlaylist()" class="px-5 py-2.5 rounded-full accent-bg text-[12px] font-bold flex items-center gap-2 tap"><i data-lucide="play" class="w-[15px] h-[15px] fill-current"></i> Putar</button>
+              <button onclick="switchView('search');document.getElementById('searchInput').focus()" class="px-4 py-2.5 rounded-full bg-white/[0.07] text-[12px] font-semibold flex items-center gap-2 tap"><i data-lucide="plus" class="w-[15px] h-[15px]"></i> Tambah lagu</button>
+            </div>
+          </div>
+          <div id="playlistTrackRows" class="space-y-2"></div>`;
+        if (playlist.tracks.length) renderTrackList(playlist.tracks, "playlistTrackRows");
+        else document.getElementById("playlistTrackRows").innerHTML = `<div class="rounded-2xl border border-white/[0.07] bg-white/[0.025] py-9 px-5 text-center"><p class="text-[13px] font-semibold">Playlist ini masih kosong</p><p class="text-[11px] text-white/45 mt-1">Cari lagu, lalu tekan ikon daftar untuk menambahkannya.</p></div>`;
+        lucide.createIcons();
+        return;
+      }
+    }
+    if (!state.playlists.length) {
+      el.innerHTML = `
+        <div class="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-8 text-center">
+          <div class="w-[56px] h-[56px] mx-auto mb-3 rounded-2xl bg-white/[0.04] flex items-center justify-center">
+            <i data-lucide="list-music" class="w-[24px] h-[24px] text-white/40"></i>
+          </div>
+          <h3 class="text-[14px] font-bold mb-1">Belum Ada Playlist</h3>
+          <p class="text-[11.5px] text-white/45">Buat playlist pertamamu.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+    el.innerHTML = state.playlists.map((p, i) => `
+      <div onclick="openSavedPlaylist('${esc(p.id)}')" class="playlist-row tap cursor-pointer rounded-2xl border border-white/[0.06] bg-white/[0.025] p-[12px] flex items-center gap-[12px] mb-2">
+        <div class="w-[52px] h-[52px] rounded-xl accent-bg flex items-center justify-center shrink-0">
+          <i data-lucide="list-music" class="w-[22px] h-[22px]"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-[13px] font-semibold truncate">${esc(p.name)}</h4>
+          <p class="text-[11px] text-white/45">${p.tracks.length} lagu</p>
+        </div>
+        <button onclick="event.stopPropagation();deletePlaylist(${i})" class="w-[34px] h-[34px] rounded-full flex items-center justify-center text-red-400/70" aria-label="Hapus playlist">
+          <i data-lucide="trash-2" class="w-[15px] h-[15px]"></i>
+        </button>
+      </div>
+    `).join("");
+    lucide.createIcons();
+  } else {
+    const seen = new Set();
+    const artists = [];
+    for (const t of state.likes) {
+      if (t.user && t.user.username && !seen.has(t.user.username)) {
+        seen.add(t.user.username);
+        artists.push(t.user);
+      }
+    }
+    if (!artists.length) {
+      el.innerHTML = `<div class="text-white/40 text-[12px] py-10 text-center">Belum ada artis. Sukai lagu dulu.</div>`;
+      return;
+    }
+    el.innerHTML = artists.map(a => `
+      <div onclick="openArtist('${esc(a.username).replace(/'/g,"\\'")}')" class="tap cursor-pointer rounded-2xl border border-white/[0.06] bg-white/[0.025] p-[10px] flex items-center gap-[12px] mb-2">
+        <img src="${a.avatar_url || DEFAULT_ART}" class="w-[52px] h-[52px] rounded-full object-cover" onerror="this.src='${DEFAULT_ART}'">
+        <div class="flex-1 min-w-0">
+          <h4 class="text-[13px] font-semibold truncate">${esc(a.username)}</h4>
+        </div>
+      </div>
+    `).join("");
+    lucide.createIcons();
+  }
+}
+
+function createPlaylist() {
+  activePlaylistId = null;
+  pendingPlaylistTrack = null;
+  document.getElementById("playlistModalTitle").textContent = "Buat playlist";
+  document.getElementById("playlistModalSubtitle").textContent = "Kumpulkan lagu yang ingin kamu putar lagi.";
+  document.getElementById("playlistTrackPreview").classList.add("hidden");
+  document.getElementById("playlistChoices").classList.add("hidden");
+  document.getElementById("playlistNameInput").value = "";
+  document.getElementById("playlistModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("playlistNameInput").focus(), 100);
+}
+
+function openAddTrackModal(trackIndex) {
+  const track = state.tracks[trackIndex];
+  if (!track) return toast("Lagu tidak ditemukan");
+  pendingPlaylistTrack = track;
+  document.getElementById("playlistModalTitle").textContent = "Tambahkan ke playlist";
+  document.getElementById("playlistModalSubtitle").textContent = state.playlists.length ? "Pilih playlist atau buat yang baru." : "Buat playlist pertamamu untuk menyimpan lagu ini.";
+  document.getElementById("playlistTrackTitle").textContent = track.title || "Lagu";
+  document.getElementById("playlistTrackArtist").textContent = (track.user && track.user.username) || "Artis";
+  document.getElementById("playlistTrackArt").src = track.artwork_url || (track.user && track.user.avatar_url) || DEFAULT_ART;
+  document.getElementById("playlistTrackPreview").classList.remove("hidden");
+  const choices = document.getElementById("playlistChoices");
+  choices.innerHTML = state.playlists.map(p => `
+    <button data-playlist-id="${esc(p.id)}" onclick="addPendingTrackToPlaylist(this.dataset.playlistId)"
+      class="playlist-row w-full text-left flex items-center gap-3 p-2 rounded-xl tap">
+      <span class="w-[42px] h-[42px] rounded-lg accent-bg flex items-center justify-center shrink-0"><i data-lucide="list-music" class="w-[17px] h-[17px]"></i></span>
+      <span class="min-w-0"><span class="block text-[12px] font-semibold truncate">${esc(p.name)}</span><span class="block text-[10px] text-white/45">${p.tracks.length} lagu</span></span>
+    </button>`).join("");
+  choices.classList.toggle("hidden", !state.playlists.length);
+  document.getElementById("playlistNameInput").value = "";
+  document.getElementById("playlistModal").classList.remove("hidden");
+  lucide.createIcons();
+}
+
+function closePlaylistModal() {
+  document.getElementById("playlistModal").classList.add("hidden");
+  pendingPlaylistTrack = null;
+}
+
+function savePlaylists() {
+  try { localStorage.setItem("sp_playlists", JSON.stringify(state.playlists)); }
+  catch { toast("Penyimpanan penuh. Hapus beberapa lagu atau playlist."); }
+}
+
+function createPlaylistFromModal() {
+  const input = document.getElementById("playlistNameInput");
+  const name = (input.value || "").trim();
+  if (!name) { input.focus(); return toast("Isi nama playlist dulu"); }
+  const track = pendingPlaylistTrack;
+  const playlist = {
+    id: `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    tracks: track ? [track] : [],
+  };
+  state.playlists.unshift(playlist);
+  savePlaylists();
+  closePlaylistModal();
+  renderLibrary();
+  toast(track ? "Playlist dibuat dan lagu ditambahkan" : "Playlist dibuat");
+}
+
+function addPendingTrackToPlaylist(playlistId) {
+  const playlist = state.playlists.find(p => p.id === playlistId);
+  const track = pendingPlaylistTrack;
+  if (!playlist || !track) return;
+  if (playlist.tracks.some(t => String(t.id) === String(track.id))) return toast("Lagu sudah ada di playlist ini");
+  playlist.tracks.push(track);
+  savePlaylists();
+  closePlaylistModal();
+  if (activePlaylistId === playlist.id) renderLibrary();
+  toast("Ditambahkan ke " + playlist.name);
+}
+
+function openSavedPlaylist(id) {
+  activePlaylistId = id;
+  const playlist = state.playlists.find(p => p.id === id);
+  if (!playlist) return;
+  state.tracks = playlist.tracks;
+  renderLibrary();
+}
+
+function closeSavedPlaylist() {
+  activePlaylistId = null;
+  renderLibrary();
+}
+
+function playSavedPlaylist() {
+  const playlist = state.playlists.find(p => p.id === activePlaylistId);
+  if (!playlist || !playlist.tracks.length) return toast("Playlist ini belum ada lagu");
+  state.tracks = playlist.tracks;
+  playTrack(0);
+}
+
+function removeTrackFromPlaylist(index) {
+  const playlist = state.playlists.find(p => p.id === activePlaylistId);
+  if (!playlist || !playlist.tracks[index]) return;
+  playlist.tracks.splice(index, 1);
+  state.tracks = playlist.tracks;
+  savePlaylists();
+  renderLibrary();
+  toast("Lagu dihapus dari playlist");
+}
+
+function deletePlaylist(i) {
+  if (!confirm("Hapus playlist ini?")) return;
+  if (activePlaylistId === state.playlists[i]?.id) activePlaylistId = null;
+  state.playlists.splice(i, 1);
+  savePlaylists();
+  renderLibrary();
+}
+
+/* ============================================================
+   OFFLINE
+============================================================ */
+function renderOffline() {
+  const el = document.getElementById("offlineList");
+  document.getElementById("offlineTotal").textContent = state.downloaded.length + " LAGU TERSIMPAN";
+  if (!state.downloaded.length) {
+    el.innerHTML = `
+      <div class="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-8 text-center">
+        <div class="w-[56px] h-[56px] mx-auto mb-3 rounded-2xl bg-white/[0.04] flex items-center justify-center">
+          <i data-lucide="wifi-off" class="w-[24px] h-[24px] text-white/40"></i>
+        </div>
+        <h3 class="text-[14px] font-bold mb-1">Belum Ada Lagu Offline</h3>
+        <p class="text-[11.5px] text-white/45">Tap ikon download di lagu untuk simpan.</p>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+  state.tracks = state.downloaded.slice();
+  renderTrackList(state.downloaded, "offlineList");
+}
+
+function playAllOffline() {
+  if (!state.downloaded.length) return toast('Belum ada lagu offline');
+  state.tracks = state.downloaded.slice();
+  playTrack(0);
+}
+
+function updateNetBadge() {
+  const badge = document.getElementById("netBadge");
+  if (!badge) return;
+  if (navigator.onLine) { badge.textContent = "ONLINE"; badge.className = "text-[10px] px-[8px] py-[3px] rounded-full bg-green-500/15 border border-green-500/30 text-green-400 font-bold"; }
+  else { badge.textContent = "OFFLINE"; badge.className = "text-[10px] px-[8px] py-[3px] rounded-full bg-red-500/15 border border-red-500/30 text-red-400 font-bold"; }
+}
+window.addEventListener("online", updateNetBadge);
+window.addEventListener("offline", updateNetBadge);
+
+/* ============================================================
+   PWA
+============================================================ */
+async function clearCache() {
+  if (!confirm("Bersihkan cache PWA?")) return;
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    toast("Cache dibersihkan");
+  }
+}
+
+async function installPWA() {
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (standalone) return toast("Aplikasi sudah terinstall");
+
+  const ev = window.__bip;
+  if (ev) {
+    ev.prompt();
+    ev.userChoice.then(r => { if (r.outcome === "accepted") toast("Terinstall!"); window.__bip = null; });
+    return;
+  }
+
+  try {
+    const m = await (await fetch("/manifest.json", { cache: "no-store" })).json();
+    for (const ic of (m.icons || [])) {
+      const r = await fetch(ic.src, { cache: "no-store" });
+      if (!r.ok) return toast("Ikon " + ic.src + " tidak ditemukan (" + r.status + "). Upload ke folder public/");
+    }
+    if (!navigator.serviceWorker) return toast("Browser ini belum mendukung pemasangan web app");
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return toast("PWA belum siap. Pastikan sw.js sudah diunggah ke hosting yang sama.");
+  } catch { return toast("Manifest gagal dibaca, cek koneksi"); }
+  toast("Buka menu browser (⋮), lalu pilih Install aplikasi atau Tambahkan ke layar utama");
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((reg) => {
+    const sw = document.getElementById("swStatus");
+    if (sw) sw.textContent = "Terdaftar";
+    reg.update().catch(() => {});
+  }).catch(() => {
+    const sw = document.getElementById("swStatus");
+    if (sw) sw.textContent = "Gagal";
+  });
+}
+
+/* ============================================================
+   CHAT (ala WhatsApp: balas, edit, hapus pesan sendiri)
+============================================================ */
+let _allMessages = [];
+const CHAT_CACHE_KEY = "sp_chat_cache";
+
+function loadChatCache() {
+  try {
+    const raw = localStorage.getItem(CHAT_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+// Cache tanpa isi foto (base64 besar) supaya localStorage tidak penuh
+function saveChatCache(msgs) {
+  const slim = msgs.filter(m => !m._pending).slice(-80)
+    .map(m => (m.image || m.file) ? { ...m, image: null, file: null, hadImage: !!m.image, hadFile: !!m.file } : m);
+  try { localStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(slim)); } catch {}
+}
+
+function fmtClock(ts) {
+  const d = new Date(ts || Date.now());
+  return String(d.getHours()).padStart(2, "0") + "." + String(d.getMinutes()).padStart(2, "0");
+}
+
+function dayLabel(ts) {
+  const d = new Date(ts), n = new Date(), y = new Date();
+  y.setDate(n.getDate() - 1);
+  if (d.toDateString() === n.toDateString()) return "Hari ini";
+  if (d.toDateString() === y.toDateString()) return "Kemarin";
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function sameSender(a, b) {
+  return a.uid ? a.uid === b.uid : (!b.uid && a.name === b.name);
+}
+
+function isMine(m) {
+  return !!(state.user && m && m.uid && m.uid === state.user.uid);
+}
+
+function chatSig(list) {
+  return list.map(m => m.id + (m.editedAt || "") + (m.deleted ? "d" : "") + (m._pending ? "p" : "")).join(",")
+    + "|" + (state.user ? state.user.uid : "");
+}
+
+function startChatPoll() {
+  stopChatPoll();
+  const cached = loadChatCache();
+  if (cached.length && !_allMessages.length) {
+    _allMessages = cached;
+    renderChat(_allMessages, true);
+  }
+  loadChat(true);
+  state.chatPollTimer = setInterval(loadChat, 3000);
+}
+
+function stopChatPoll() {
+  if (state.chatPollTimer) {
+    clearInterval(state.chatPollTimer);
+    state.chatPollTimer = null;
+  }
+}
+
+async function loadChat(force) {
+  try {
+    const r = await fetch("/api/chat", { cache: "no-store" });
+    const data = await r.json();
+    if (!data.success) return;
+
+    const statusEl = document.getElementById("chatStatus");
+    if (statusEl) statusEl.textContent = `Ngobrol bareng pendengar SoundPulse (${data.storage === "kv" ? "live" : "lokal"})`;
+
+    const server = data.messages || [];
+    const ids = new Set(server.map(m => m.id));
+    const pending = _allMessages.filter(m => m._pending && !ids.has(m.id));
+    const merged = [...server, ...pending];
+
+    const sig = chatSig(merged);
+    if (!force && sig === state._chatSig) return;
+    state._chatSig = sig;
+
+    _allMessages = merged;
+    saveChatCache(server);
+    renderChat(merged, force === true);
+  } catch {
+    if (!_allMessages.length) {
+      const cached = loadChatCache();
+      if (cached.length) { _allMessages = cached; renderChat(cached, true); }
+    }
+  }
+}
+
+function bubbleHTML(m, isMe, first) {
+  let inner = "";
+
+  if (m.deleted) {
+    inner = `<div class="flex items-center gap-[6px] italic text-white/55"><i data-lucide="ban" class="w-[13px] h-[13px]"></i><span>Pesan ini telah dihapus</span></div>`;
+  } else {
+    if (m.replyTo) {
+      const r = m.replyTo;
+      const rc = colorFromName(r.name || "?");
+      const rp = r.text || (r.hasImage ? "📷 Foto" : r.hasFile ? "📎 File" : "Pesan");
+      inner += `<div class="reply-quote" data-reply-id="${esc(r.id)}" style="border-left-color:${rc}">
+        <div class="rq-name" style="color:${rc}">${esc(r.name)}</div>
+        <div class="rq-text">${esc(rp)}</div></div>`;
+    }
+    if (m.image && isSafeDataUri(m.image, "image")) {
+      inner += `<img src="${esc(m.image)}" class="chat-img" data-img-msg="${esc(m.id)}" alt="Foto">`;
+    } else if (m.hadImage) {
+      inner += `<div class="italic text-white/60">📷 Foto</div>`;
+    }
+    if (m.file && isSafeDataUri(m.file.data, "application")) {
+      const kb = Math.round((m.file.size || 0) / 1024);
+      const sz = kb > 1024 ? (kb / 1024).toFixed(1) + " MB" : Math.max(kb, 1) + " KB";
+      inner += `<a href="${esc(m.file.data)}" download="${esc(m.file.name)}" class="flex items-center gap-2 rounded-xl bg-black/25 border border-white/10 px-[10px] py-[8px] mb-[5px]">
+        <div class="w-[34px] h-[34px] rounded-lg bg-white/[0.1] flex items-center justify-center shrink-0"><i data-lucide="file" class="w-[16px] h-[16px]"></i></div>
+        <div class="min-w-0 flex-1"><div class="text-[11.5px] font-semibold truncate">${esc(m.file.name)}</div><div class="text-[10px] text-white/55">${sz}</div></div>
+        <i data-lucide="download" class="w-[14px] h-[14px] text-white/60 shrink-0"></i></a>`;
+    } else if (m.hadFile) {
+      inner += `<div class="italic text-white/60">📎 File</div>`;
+    }
+    if (m.text) inner += `<div class="msg-text">${esc(m.text)}</div>`;
+  }
+
+  const meta = `<span class="msg-meta">${m.editedAt ? "diedit · " : ""}${fmtClock(m.ts)}${m._pending ? " · …" : ""}</span>`;
+  const attrs = `data-msg-id="${esc(m.id)}"${m.deleted ? ' data-deleted="1"' : ""}${m._pending ? ' data-pending="1"' : ""}`;
+  return `<div class="bubble-wa ${first ? "first" : ""}" ${attrs}>${inner}${meta}</div>`;
+}
+
+function msgRowHTML(m, first) {
+  const isMe = isMine(m);
+  const mt = first ? "mt-3" : "mt-[3px]";
+  const bubble = bubbleHTML(m, isMe, first);
+
+  if (isMe) return `<div class="msg-row me ${mt}">${bubble}</div>`;
+
+  const color = colorFromName(m.uid || m.name || "?");
+  const badge = m.admin ? ` <span class="accent-bg text-[9px] font-bold px-[5px] py-[1px] rounded-full align-middle">DEV</span>` : "";
+  const av = first
+    ? `<div class="relative w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center text-[12px] font-bold text-white" style="background:${color}"><span>${esc((m.name || "?").charAt(0).toUpperCase())}</span>${avatarImg(m.avatar)}</div>`
+    : "";
+  const nameLine = first
+    ? `<div class="text-[11.5px] font-semibold mb-[2px] ml-[2px]" style="color:${color}">${esc(m.name || "")}${badge}</div>`
+    : "";
+  // Foto profil + nama hanya di pesan pertama dari satu pengirim berturut-turut
+  return `<div class="msg-row other ${mt}"><div class="msg-av">${av}</div><div class="min-w-0 max-w-[78%]">${nameLine}${bubble}</div></div>`;
+}
+
+function renderChat(messages, forceScroll) {
+  const el = document.getElementById("chatMessages");
+  const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
+
+  if (!messages.length) {
+    el.innerHTML = `<div class="text-center text-white/35 text-[12px] py-10">Belum ada pesan. Jadi yang pertama!</div>`;
+    return;
+  }
+
+  let html = "", prev = null;
+  for (const m of messages) {
+    const dayChanged = !prev || new Date(prev.ts).toDateString() !== new Date(m.ts).toDateString();
+    if (dayChanged) {
+      html += `<div class="flex justify-center mt-4 mb-1"><span class="text-[10.5px] font-semibold text-white/55 bg-white/[0.07] px-[10px] py-[3px] rounded-full">${esc(dayLabel(m.ts))}</span></div>`;
+    }
+    html += msgRowHTML(m, dayChanged || !sameSender(prev, m));
+    prev = m;
+  }
+  el.innerHTML = html;
+  lucide.createIcons();
+  if (forceScroll || nearBottom) window.scrollTo(0, document.body.scrollHeight);
+}
+
+/* ---------- interaksi: tahan lama = menu, tap foto = pratinjau, tap kutipan = lompat ---------- */
+(function initChatInteractions() {
+  const el = document.getElementById("chatMessages");
+  let timer = null, fired = false;
+  const bubbleOf = t => t.closest && t.closest(".bubble-wa[data-msg-id]");
+  const usable = b => b && !b.dataset.deleted && !b.dataset.pending;
+
+  const start = (e) => {
+    const b = bubbleOf(e.target);
+    if (!usable(b)) return;
+    fired = false;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fired = true;
+      if (navigator.vibrate) navigator.vibrate(25);
+      openContextMenu(b.dataset.msgId);
+    }, 450);
+  };
+  const cancel = () => clearTimeout(timer);
+
+  el.addEventListener("touchstart", start, { passive: true });
+  el.addEventListener("touchend", cancel);
+  el.addEventListener("touchmove", cancel);
+  el.addEventListener("touchcancel", cancel);
+  el.addEventListener("mousedown", start);
+  el.addEventListener("mouseup", cancel);
+  el.addEventListener("mouseleave", cancel);
+
+  el.addEventListener("contextmenu", (e) => {
+    const b = bubbleOf(e.target);
+    if (!b) return;
+    e.preventDefault();
+    clearTimeout(timer);
+    if (usable(b)) openContextMenu(b.dataset.msgId);
+  });
+
+  el.addEventListener("click", (e) => {
+    if (fired) { fired = false; return; }
+    const img = e.target.closest(".chat-img");
+    if (img) {
+      const msg = _allMessages.find(x => x.id === img.dataset.imgMsg);
+      if (msg && msg.image) openImageFull(msg.image);
+      return;
+    }
+    const rq = e.target.closest(".reply-quote");
+    if (rq) jumpToMessage(rq.dataset.replyId);
+  });
+
+  el.addEventListener("error", (e) => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains("chat-img")) {
+      const d = document.createElement("div");
+      d.className = "text-[11px] text-white/55 italic mb-1";
+      d.textContent = "Foto gagal dimuat";
+      t.replaceWith(d);
+    }
+  }, true);
+})();
+
+function jumpToMessage(id) {
+  if (!id) return;
+  const b = document.querySelector(`.bubble-wa[data-msg-id="${CSS.escape(id)}"]`);
+  if (!b) return toast("Pesan asli tidak ada lagi");
+  b.scrollIntoView({ behavior: "smooth", block: "center" });
+  b.classList.remove("flash");
+  void b.offsetWidth;
+  b.classList.add("flash");
+}
+
+function openImageFull(src) {
+  document.getElementById("imgViewerImg").src = src;
+  document.getElementById("imgViewer").style.display = "flex";
+}
+function closeImageFull() {
+  document.getElementById("imgViewer").style.display = "none";
+  document.getElementById("imgViewerImg").src = "";
+}
+
+/* ---------- menu pesan ---------- */
+function openContextMenu(id) {
+  const msg = _allMessages.find(m => m.id === id);
+  if (!msg || msg.deleted) return;
+  state.contextMenuId = id;
+
+  const mine = isMine(msg);
+  const show = (btn, on) => { document.getElementById(btn).style.display = on ? "" : "none"; };
+  show("ctxReplyBtn", !!state.user);
+  show("ctxCopyBtn", !!msg.text);
+  show("ctxEditBtn", mine && !!msg.text);
+  show("ctxDeleteBtn", mine);
+
+  document.getElementById("chatContextMenu").classList.remove("hidden");
+  lucide.createIcons();
+}
+
+function closeChatContextMenu() {
+  document.getElementById("chatContextMenu").classList.add("hidden");
+  state.contextMenuId = null;
+}
+
+async function copyMessage() {
+  const msg = _allMessages.find(m => m.id === state.contextMenuId);
+  closeChatContextMenu();
+  if (!msg || !msg.text) return;
+  try {
+    await navigator.clipboard.writeText(msg.text);
+    toast("Teks disalin");
+  } catch { toast("Gagal menyalin"); }
+}
+
+/* ---------- balas ---------- */
+function startReplyFromMenu() {
+  const id = state.contextMenuId;
+  closeChatContextMenu();
+  startReply(id);
+}
+
+function startReply(msgId) {
+  const msg = _allMessages.find(m => m.id === msgId);
+  if (!msg || msg.deleted || !state.user) return;
+  cancelEdit();
+  state.replyTo = msg;
+  document.getElementById("replyName").textContent = msg.name;
+  document.getElementById("replyText").textContent = msg.text || (msg.image || msg.hadImage ? "📷 Foto" : (msg.file || msg.hadFile) ? "📎 " + ((msg.file && msg.file.name) || "File") : "");
+  document.getElementById("replyPreview").classList.remove("hidden");
+  document.getElementById("chatInput").focus();
+}
+
+function cancelReply() {
+  state.replyTo = null;
+  document.getElementById("replyPreview").classList.add("hidden");
+}
+
+/* ---------- lampiran foto ---------- */
+function cancelAttach() {
+  state.attach = null;
+  document.getElementById("attachPreview").classList.add("hidden");
+}
+
+function showAttachPreview() {
+  const a = state.attach;
+  if (!a) return cancelAttach();
+  const sizeKB = Math.round((a.size || 0) / 1024);
+  const isImg = a.type === "image";
+  const img = document.getElementById("attachPreviewImg");
+  img.classList.toggle("hidden", !isImg);
+  if (isImg) img.src = a.data;
+  document.getElementById("attachPreviewFile").classList.toggle("hidden", isImg);
+  document.getElementById("attachPreviewName").textContent = isImg ? "Foto" : (a.name || "File");
+  document.getElementById("attachPreviewSize").textContent = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + " MB" : sizeKB + " KB";
+  document.getElementById("attachPreview").classList.remove("hidden");
+}
+
+function handleChatImage(e) {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast("Maksimal 5MB"); return; }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        const ratio = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+
+      if (dataUrl.length > 700000) { toast("Foto terlalu besar, coba yang lebih kecil"); return; }
+      state.attach = { type: "image", data: dataUrl, size: dataUrl.length };
+      showAttachPreview();
+    };
+    img.onerror = () => toast("Gagal memuat gambar");
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleChatFile(e) {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file) return;
+  if (file.size > 500 * 1024) { toast("File maksimal 500KB"); return; }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    if (typeof dataUrl !== "string" || dataUrl.length > 700000) { toast("File terlalu besar"); return; }
+    // Tipe tidak dikenal browser -> data URI bisa tanpa mime; beri default agar lolos validasi server
+    const safe = /^data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,/i.test(dataUrl)
+      ? dataUrl
+      : dataUrl.replace(/^data:[^,]*,/, "data:application/octet-stream;base64,");
+    state.attach = { type: "file", data: safe, name: file.name || "file", size: file.size, mime: file.type || "application/octet-stream" };
+    showAttachPreview();
+  };
+  reader.onerror = () => toast("Gagal membaca file");
+  reader.readAsDataURL(file);
+}
+
+/* ---------- edit ---------- */
+function startEditMessage() {
+  const msg = _allMessages.find(m => m.id === state.contextMenuId);
+  if (!msg || !isMine(msg) || !msg.text) return;
+
+  closeChatContextMenu();
+  cancelReply();
+  cancelAttach();
+
+  state.editingMessageId = msg.id;
+  document.getElementById("editText").textContent = msg.text;
+  const input = document.getElementById("chatInput");
+  input.value = msg.text;
+  input.focus();
+  document.getElementById("editPreview").classList.remove("hidden");
+}
+
+function cancelEdit() {
+  state.editingMessageId = null;
+  document.getElementById("chatInput").value = "";
+  document.getElementById("editPreview").classList.add("hidden");
+}
+
+/* ---------- hapus ---------- */
+async function deleteMessage() {
+  const msgId = state.contextMenuId;
+  const msg = _allMessages.find(m => m.id === msgId);
+  if (!msg || !isMine(msg)) return;
+  if (!confirm("Hapus pesan ini untuk semua orang?")) return;
+  closeChatContextMenu();
+
+  const backup = _allMessages;
+  _allMessages = _allMessages.map(m => m.id === msgId
+    ? { id: m.id, uid: m.uid, name: m.name, avatar: m.avatar, deleted: true, ts: m.ts }
+    : m);
+  if (state.editingMessageId === msgId) cancelEdit();
+  if (state.replyTo && state.replyTo.id === msgId) cancelReply();
+  renderChat(_allMessages);
+
+  try {
+    const r = await fetch("/api/chat", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: msgId }),
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || "Gagal hapus");
+    state._chatSig = null;
+    saveChatCache(_allMessages);
+  } catch (e) {
+    toast("Gagal hapus: " + e.message);
+    _allMessages = backup;
+    renderChat(_allMessages);
+  }
+}
+
+/* ---------- kirim / simpan edit ---------- */
+function handleAuthLost() {
+  state.user = null;
+  try { localStorage.removeItem("sp_user"); } catch {}
+  updateProfileUI();
+  renderChatAuth();
+  toast("Sesi habis, login Google lagi ya");
+}
+
+async function submitEdit() {
+  const input = document.getElementById("chatInput");
+  const text = (input.value || "").trim();
+  if (!text) return;
+
+  const id = state.editingMessageId;
+  const msg = _allMessages.find(m => m.id === id);
+  if (!msg) return cancelEdit();
+  if (text === msg.text) return cancelEdit();
+
+  const oldText = msg.text, oldEdited = msg.editedAt;
+  cancelEdit();
+  msg.text = text;
+  msg.editedAt = Date.now();
+  renderChat(_allMessages);
+
+  try {
+    const r = await fetch("/api/chat", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, text }),
+    });
+    const data = await r.json();
+    if (!data.success) {
+      if (data.code === "AUTH") handleAuthLost();
+      throw new Error(data.error || "Gagal edit");
+    }
+    msg.text = data.message.text;
+    msg.editedAt = data.message.editedAt;
+    state._chatSig = null;
+    saveChatCache(_allMessages);
+    renderChat(_allMessages);
+  } catch (e) {
+    toast("Gagal edit: " + e.message);
+    msg.text = oldText;
+    msg.editedAt = oldEdited;
+    renderChat(_allMessages);
+  }
+}
+
+async function sendChat() {
+  if (!state.user) { renderChatAuth(); return; }
+  if (state.editingMessageId) return submitEdit();
+
+  const input = document.getElementById("chatInput");
+  const text = (input.value || "").trim();
+  const attach = state.attach;
+  const replyTo = state.replyTo;
+  if (!text && !attach) return;
+
+  const msgId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const replyPayload = replyTo
+    ? { id: replyTo.id, name: replyTo.name, text: (replyTo.text || "").slice(0, 100), hasImage: !!(replyTo.image || replyTo.hadImage), hasFile: !!(replyTo.file || replyTo.hadFile) }
+    : null;
+
+  const payload = { clientId: msgId, text, replyTo: replyPayload };
+  if (attach) {
+    if (attach.type === "image") payload.image = attach.data;
+    else payload.file = { name: attach.name, type: attach.mime, size: attach.size, data: attach.data };
+  }
+
+  input.value = "";
+  cancelReply();
+  cancelAttach();
+
+  // Tampil dulu (optimistic), nanti diganti data server
+  _allMessages = [..._allMessages, {
+    id: msgId, uid: state.user.uid, name: state.user.name, avatar: state.user.picture,
+    admin: state.user.admin, text, image: payload.image || null, file: payload.file || null,
+    replyTo: replyPayload, ts: Date.now(), _pending: true,
+  }];
+  renderChat(_allMessages, true);
+
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    if (!data.success) {
+      if (data.code === "AUTH") handleAuthLost();
+      throw new Error(data.error || "Gagal kirim");
+    }
+    await loadChat(true);
+  } catch (e) {
+    toast("Gagal kirim: " + e.message);
+    _allMessages = _allMessages.filter(m => m.id !== msgId);
+    renderChat(_allMessages);
+    if (text && !input.value) input.value = text;
+  }
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+async function initApp() {
+  renderGenrePills();
+  renderRecent();
+  updateProfileUI();
+  updateNetBadge();
+  switchView("home");
+
+  loadAuth();
+
+  await Promise.allSettled([
+    loadQuickPicks("Indonesian Pop Hits"),
+    loadPopularPlaylists(),
+    loadTopArtists(),
+  ]);
+
+  lucide.createIcons();
+}
+
+initApp();
+</script>
+
+<script src="/offline-fix.js"></script>
+</body>
+</html>
