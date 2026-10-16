@@ -1086,6 +1086,17 @@ function esc(s) {
   return String(s || "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// Treat artwork/avatar URLs from APIs as untrusted input. Only allow HTTPS image URLs.
+function safeImageUrl(value) {
+  try {
+    const u = new URL(String(value || ""), location.origin);
+    if (u.protocol !== "https:" || u.username || u.password) return DEFAULT_ART;
+    const host = u.hostname.toLowerCase();
+    if (!(host === "soundcloud.com" || host.endsWith(".soundcloud.com") || host === "sndcdn.com" || host.endsWith(".sndcdn.com") || host === "soundcloud.cloud" || host.endsWith(".soundcloud.cloud") || host === location.hostname)) return DEFAULT_ART;
+    return u.href.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  } catch { return DEFAULT_ART; }
+}
+
 function isSafeDataUri(value, expectedKind) {
   if (typeof value !== "string") return false;
   const re = expectedKind === "image"
@@ -1348,7 +1359,7 @@ function renderTrackList(list, containerId) {
   }
 
   el.innerHTML = list.map((t, i) => {
-    const art = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+    const art = safeImageUrl(t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART);
     const artist = (t.user && t.user.username) || "Unknown";
     const playing = state.currentTrack && state.currentTrack.id === t.id;
     const liked = state.likes.some(l => l.id === t.id);
@@ -1402,7 +1413,7 @@ async function loadPopularPlaylists() {
     const items = (data.collection || []).filter(p => p && p.id && p.title).slice(0, 12);
     if (!items.length) { row.innerHTML = `<div class="shrink-0 text-white/35 text-[12px] py-4">Playlist tidak tersedia</div>`; return; }
     row.innerHTML = items.map((p, idx) => {
-      const art = p.artwork_url || (p.user && p.user.avatar_url) || null;
+      const art = safeImageUrl(p.artwork_url || (p.user && p.user.avatar_url) || DEFAULT_ART);
       const creator = (p.user && p.user.username) || "Unknown";
       const hue1 = (idx * 40) % 360, hue2 = (hue1 + 40) % 360;
       return `
@@ -1446,7 +1457,7 @@ async function loadTopArtists() {
     const artists = (data.collection || []).filter(a => a && a.username).slice(0, 12);
     if (!artists.length) { row.innerHTML = `<div class="shrink-0 text-white/35 text-[12px] py-4">Artis tidak tersedia</div>`; return; }
     row.innerHTML = artists.map((a, idx) => {
-      const art = a.avatar_url;
+      const art = safeImageUrl(a.avatar_url);
       const hue1 = (idx * 55) % 360, hue2 = (hue1 + 45) % 360;
       return `
         <button onclick="openArtist('${esc(a.username).replace(/'/g, "\\'")}')" class="fadeUp tap shrink-0 w-[104px] text-center">
@@ -1497,7 +1508,7 @@ function renderRecent() {
     return;
   }
   const t = state.recent;
-  const art = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+  const art = safeImageUrl(t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART);
   const playing = state.currentTrack && state.currentTrack.id === t.id;
   c.innerHTML = `
     <div onclick="playRecent()" class="tap cursor-pointer rounded-2xl border border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.045] transition p-[12px] flex items-center gap-[12px]">
@@ -1539,9 +1550,9 @@ async function playTrack(idx, opts = {}) {
   document.getElementById("miniPlayer").style.display = "";
   document.getElementById("miniTitle").textContent = t.title || "Unknown";
   document.getElementById("miniArtist").textContent = (t.user && t.user.username) || "Unknown";
-  document.getElementById("miniArt").src = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+  document.getElementById("miniArt").src = safeImageUrl(t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART);
 
-  const art = t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART;
+  const art = safeImageUrl(t.artwork_url || (t.user && t.user.avatar_url) || DEFAULT_ART);
   document.getElementById("fullTitle").textContent = t.title || "Unknown";
   document.getElementById("fullArtist").textContent = (t.user && t.user.username) || "Unknown";
   document.getElementById("fullArtistTop").textContent = (t.user && t.user.username) || "Unknown";
@@ -2369,7 +2380,7 @@ async function doSearch(q) {
         el.innerHTML = items.map(a => `
           <button data-artist="${esc(a.username)}" onclick="openArtist(this.dataset.artist)"
             class="tap w-full text-left rounded-2xl border border-white/[0.06] bg-white/[0.025] hover:bg-white/[0.045] p-[10px] flex items-center gap-[12px]">
-            <img src="${esc(a.avatar_url || DEFAULT_ART)}" class="w-[52px] h-[52px] rounded-full object-cover" onerror="this.src='${DEFAULT_ART}'">
+            <img src="${safeImageUrl(a.avatar_url || DEFAULT_ART)}" class="w-[52px] h-[52px] rounded-full object-cover" onerror="this.src='${DEFAULT_ART}'">
             <span class="flex-1 min-w-0">
               <span class="block text-[13px] font-semibold truncate">${esc(a.username || "Artis")}</span>
               <span class="block text-[11px] text-white/45 truncate mt-[2px]">${a.followers_count ? fmtCount(a.followers_count) + " followers" : "Artis"}</span>
@@ -2490,7 +2501,7 @@ function renderLibrary() {
     }
     el.innerHTML = artists.map(a => `
       <div onclick="openArtist('${esc(a.username).replace(/'/g,"\\'")}')" class="tap cursor-pointer rounded-2xl border border-white/[0.06] bg-white/[0.025] p-[10px] flex items-center gap-[12px] mb-2">
-        <img src="${a.avatar_url || DEFAULT_ART}" class="w-[52px] h-[52px] rounded-full object-cover" onerror="this.src='${DEFAULT_ART}'">
+        <img src="${safeImageUrl(a.avatar_url || DEFAULT_ART)}" class="w-[52px] h-[52px] rounded-full object-cover" onerror="this.src='${DEFAULT_ART}'">
         <div class="flex-1 min-w-0">
           <h4 class="text-[13px] font-semibold truncate">${esc(a.username)}</h4>
         </div>
@@ -2520,7 +2531,7 @@ function openAddTrackModal(trackIndex) {
   document.getElementById("playlistModalSubtitle").textContent = state.playlists.length ? "Pilih playlist atau buat yang baru." : "Buat playlist pertamamu untuk menyimpan lagu ini.";
   document.getElementById("playlistTrackTitle").textContent = track.title || "Lagu";
   document.getElementById("playlistTrackArtist").textContent = (track.user && track.user.username) || "Artis";
-  document.getElementById("playlistTrackArt").src = track.artwork_url || (track.user && track.user.avatar_url) || DEFAULT_ART;
+  document.getElementById("playlistTrackArt").src = safeImageUrl(track.artwork_url || (track.user && track.user.avatar_url) || DEFAULT_ART);
   document.getElementById("playlistTrackPreview").classList.remove("hidden");
   const choices = document.getElementById("playlistChoices");
   choices.innerHTML = state.playlists.map(p => `
