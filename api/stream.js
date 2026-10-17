@@ -1,21 +1,19 @@
 // api/stream.js
-import { enforceRateLimit } from '../lib/rate-limit.js';
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36";
 const first = v => Array.isArray(v) ? v[0] : v;
 
 function allowed(url) {
   try {
     const u = new URL(url);
-    if (u.protocol !== "https:" || u.username || u.password || (u.port && u.port !== "443")) return null;
+    if (u.protocol !== "https:") return null;
     if (/(^|\.)(soundcloud\.com|sndcdn\.com|soundcloud\.cloud)$/i.test(u.hostname)) return u;
     return null;
   } catch { return null; }
 }
 
 export default async function handler(req, res) {
-  if (!(await enforceRateLimit(req, res, { name: 'stream', limit: 90, windowSeconds: 60 }))) return;
-
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", "https://soundpulse.duckdns.org");
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Range, If-Range");
   res.setHeader("Cache-Control", "no-store");

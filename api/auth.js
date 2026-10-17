@@ -8,7 +8,6 @@
 //   SESSION_SECRET   = string acak panjang untuk tanda tangan cookie
 //   ADMIN_EMAILS     = (opsional) email admin, pisah koma -> dapat badge "Dev"
 
-import { enforceRateLimit } from '../lib/rate-limit.js';
 import { parseCookies, appendSetCookie, serializeCookie } from "../lib/cookies.js";
 import { SESSION_COOKIE, SESSION_MAX_AGE, createSession, readSession } from "../lib/session.js";
 
@@ -17,8 +16,6 @@ function publicUser(s) {
 }
 
 export default async function handler(req, res) {
-  if (req.method === 'POST' && !(await enforceRateLimit(req, res, { name: 'auth', limit: 10, windowSeconds: 60 }))) return;
-
   res.setHeader("Cache-Control", "no-store");
   const clientId = process.env.GOOGLE_CLIENT_ID || null;
 
@@ -31,32 +28,19 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       if (!clientId) return res.status(503).json({ success: false, error: "Login Google belum dikonfigurasi di server" });
 
-      let body;
-      try { body = typeof req.body === "string" ? JSON.parse(req.body) : req.body; }
-      catch { return res.status(400).json({ success: false, error: "Body JSON tidak valid" }); }
-      if (!body || typeof body !== "object" || Array.isArray(body)) return res.status(400).json({ success: false, error: "Body tidak valid" });
+      const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
       const credential = body?.credential;
       if (!credential || typeof credential !== "string" || credential.length > 4000) {
         return res.status(400).json({ success: false, error: "Token tidak valid" });
       }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-      let r;
-      try {
-        r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(credential), {
-          signal: controller.signal,
-          headers: { Accept: "application/json" },
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
+      const r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(credential));
       if (!r.ok) return res.status(401).json({ success: false, error: "Token Google ditolak" });
       const info = await r.json();
 
       const issOk = info.iss === "accounts.google.com" || info.iss === "https://accounts.google.com";
       const notExpired = Number(info.exp) * 1000 > Date.now();
-      if (info.aud !== clientId || !issOk || !notExpired || typeof info.sub !== "string" || !info.sub || info.sub.length > 255) {
+      if (info.aud !== clientId || !issOk || !notExpired || !info.sub) {
         return res.status(401).json({ success: false, error: "Token Google tidak valid" });
       }
 
@@ -78,6 +62,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   } catch (err) {
     console.error("[auth]", err);
-    return res.status(500).json({ success: false, error: "Terjadi kesalahan internal" });
+    return res.status(500).json({ success: false, error: "Terjadi kesalahan di server" });
   }
 }

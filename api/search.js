@@ -1,10 +1,5 @@
 // api/search.js
-import { enforceRateLimit } from '../lib/rate-limit.js';
 export default async function handler(req, res) {
-  if (!(await enforceRateLimit(req, res, { name: 'search', limit: 40, windowSeconds: 60 }))) return;
-
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "GET") return res.status(405).json({ success: false, error: "Method not allowed" });
   const { q, client_id, type = "tracks", playlist_id } = req.query;
 
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -15,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: "Missing client_id" });
   }
 
-  if (typeof client_id !== "string" || !/^[A-Za-z0-9]{25,80}$/.test(client_id)) {
+  if (typeof client_id !== "string" || client_id.length < 25) {
     return res.status(400).json({ success: false, error: "Invalid client_id format" });
   }
 
@@ -69,8 +64,8 @@ export default async function handler(req, res) {
     } catch (err) {
       return res.status(500).json({
         success: false,
-        error: err.name === "AbortError" ? "Request timeout" : "Gagal mengambil playlist",
-        type: err.name
+        error: "Terjadi kesalahan di server",
+        type: "ServerError"
       });
     }
   }
@@ -78,7 +73,7 @@ export default async function handler(req, res) {
   /* ============================================================
      MODE 2: Search
   ============================================================ */
-  if (!q || typeof q !== "string" || q.length > 200) {
+  if (!q) {
     return res.status(400).json({
       success: false,
       error: "Missing query",
@@ -177,7 +172,7 @@ export default async function handler(req, res) {
     if (err.name === "AbortError") {
       return res.status(504).json({ success: false, error: "Request timeout" });
     }
-    return res.status(err.name === "AbortError" ? 504 : 502).json({ success: false, error: err.name === "AbortError" ? "Request timeout" : "Gagal mengambil data SoundCloud" });
+    return res.status(500).json({ success: false, error: "Terjadi kesalahan di server", type: "ServerError" });
   }
 }
 

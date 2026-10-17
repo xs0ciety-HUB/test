@@ -3,7 +3,6 @@
 // Catatan: bundle JS SoundCloud di-host di *.sndcdn.com (bukan soundcloud.com),
 // dan client_id biasanya ada di bundle TERAKHIR.
 
-import { enforceRateLimit } from '../lib/rate-limit.js';
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36";
 const CLIENT_ID_RE = /client_id["']?\s*[:=]\s*["'`]([A-Za-z0-9]{30,40})["'`]/i;
 const SCRIPT_HOST_RE = /^https:\/\/([a-z0-9-]+\.)*(soundcloud\.com|sndcdn\.com)\//i;
@@ -56,8 +55,6 @@ async function scrapeClientId() {
 }
 
 export default async function handler(req, res) {
-  if (!(await enforceRateLimit(req, res, { name: 'credentials', limit: 10, windowSeconds: 60 }))) return;
-
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();

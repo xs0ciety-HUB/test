@@ -45,7 +45,7 @@ const kv = useKV ? {
 const memStore = { messages: [] };
 const KEY = "soundpulse:chat:messages";
 
-const IMAGE_DATA_URI = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/i;
+const IMAGE_DATA_URI = /^data:image\/(png|jpe?g|gif|webp|bmp);base64,[A-Za-z0-9+/]+=*$/;
 const FILE_DATA_URI = /^data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/]+=*$/i;
 
 function isValidDataUri(value, re, maxLen = 700000) {
@@ -56,28 +56,11 @@ const RATE_LIMIT_WINDOW_MS = 10_000;
 const RATE_LIMIT_MAX = 8;
 const rateMap = new Map();
 
-async function isRateLimited(key) {
-  // Shared, cross-instance limiter when Upstash KV/Redis is configured.
-  if (useKV) {
-    const bucket = Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS);
-    const safeKey = String(key).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
-    const redisKey = `soundpulse:rl:chat:${safeKey}:${bucket}`;
-    try {
-      const count = Number(await kvCmd("INCR", redisKey));
-      if (count === 1) await kvCmd("EXPIRE", redisKey, 15);
-      return count > RATE_LIMIT_MAX;
-    } catch (err) {
-      // Do not silently disable all protection if Redis is configured but unavailable.
-      console.error("[chat-rate-limit] shared limiter failed", err.message);
-      return true;
-    }
-  }
-  // Best-effort fallback only; not consistent across Vercel serverless instances.
+function isRateLimited(key) {
   const now = Date.now();
   const entry = rateMap.get(key);
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
     rateMap.set(key, { windowStart: now, count: 1 });
-    if (rateMap.size > 5000) rateMap.clear();
     return false;
   }
   entry.count += 1;
@@ -113,7 +96,7 @@ async function saveMessageAt(idx, msg, useKV) {
 const safeAvatar = (a) => (typeof a === "string" && /^https:\/\//.test(a) ? a : null);
 
 export default async function handler(req, res) {
-  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Cache-Control", "no-store");
@@ -156,15 +139,11 @@ export default async function handler(req, res) {
     if (!session) {
       return res.status(401).json({ success: false, code: "AUTH", error: "Login dengan Google dulu untuk ikut chat" });
     }
-    if (await isRateLimited(session.uid)) {
+    if (isRateLimited(session.uid)) {
       return res.status(429).json({ success: false, error: "Terlalu banyak request, coba lagi sebentar" });
     }
 
-    let body;
-    try { body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {}); }
-    catch { return res.status(400).json({ success: false, error: "Body JSON tidak valid" }); }
-    if (!body || typeof body !== "object" || Array.isArray(body)) return res.status(400).json({ success: false, error: "Body tidak valid" });
-    if (Buffer.byteLength(JSON.stringify(body), "utf8") > 600000) return res.status(413).json({ success: false, error: "Request terlalu besar" });
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
 
     // ============ POST ============
     if (req.method === "POST") {
@@ -182,7 +161,6 @@ export default async function handler(req, res) {
           }
         : null;
       if ((image && !cleanImage) || (file && !cleanFile)) return res.status(400).json({ success: false, error: "Format lampiran tidak valid" });
-      if (cleanFile && (cleanFile.data.length > 500000 || (cleanFile.size > 0 && cleanFile.size > 350000) || cleanFile.type.length > 60)) return res.status(413).json({ success: false, error: "Lampiran terlalu besar" });
       if (!cleanText && !cleanImage && !cleanFile) return res.status(400).json({ success: false, error: "Pesan kosong" });
 
       const cleanReply = replyTo && typeof replyTo === "object"
@@ -265,6 +243,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   } catch (err) {
     console.error("[chat]", err);
-    return res.status(500).json({ success: false, error: "Terjadi kesalahan internal" });
+    return res.status(500).json({ success: false, error: "Terjadi kesalahan di server" });
   }
 }
