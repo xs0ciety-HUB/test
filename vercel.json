@@ -53,15 +53,18 @@
         {
           "key": "X-DNS-Prefetch-Control",
           "value": "off"
-        }
-      ]
-    },
-    {
-      "source": "/api/(stream|dl)",
-      "headers": [
+        },
         {
           "key": "Cross-Origin-Resource-Policy",
           "value": "same-origin"
+        },
+        {
+          "key": "Origin-Agent-Cluster",
+          "value": "?1"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "0"
         }
       ]
     },
