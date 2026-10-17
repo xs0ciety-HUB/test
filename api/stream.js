@@ -1,3 +1,4 @@
+import { rateLimit } from "../lib/ratelimit.js";
 // api/stream.js
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36";
 const first = v => Array.isArray(v) ? v[0] : v;
@@ -18,6 +19,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Range, If-Range");
   res.setHeader("Cache-Control", "no-store");
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (await rateLimit(req, res, { name: "stream", max: 180 })) return;
   if (!["GET", "HEAD"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
 
   const raw = first(req.query.url), clientId = first(req.query.client_id);

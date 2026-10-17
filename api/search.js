@@ -1,3 +1,4 @@
+import { rateLimit } from "../lib/ratelimit.js";
 // api/search.js
 export default async function handler(req, res) {
   const { q, client_id, type = "tracks", playlist_id } = req.query;
@@ -5,6 +6,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Cache-Control", "public, max-age=1800");
+  if (await rateLimit(req, res, { name: "search", max: 120 })) return;
 
   if (!client_id) {
     return res.status(400).json({ success: false, error: "Missing client_id" });

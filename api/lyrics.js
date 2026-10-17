@@ -1,3 +1,4 @@
+import { rateLimit } from "../lib/ratelimit.js";
 // api/lyrics.js
 //   GET /api/lyrics?title=&artist=&duration=<detik>[&q=<pencarian manual>]
 //
@@ -234,6 +235,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(200).end();
+  if (await rateLimit(req, res, { name: "lyrics", max: 90 })) return;
   if (req.method !== "GET") return res.status(405).json({ success: false, error: "Method not allowed" });
 
   const title = String(first(req.query.title) || "").slice(0, 200);

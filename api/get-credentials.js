@@ -1,3 +1,4 @@
+import { rateLimit } from "../lib/ratelimit.js";
 // api/get-credentials.js
 // Ambil client_id SoundCloud: env var dulu, lalu scrape bundle JS SoundCloud.
 // Catatan: bundle JS SoundCloud di-host di *.sndcdn.com (bukan soundcloud.com),
@@ -58,6 +59,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (await rateLimit(req, res, { name: "cred", max: 60 })) return;
   if (req.method !== "GET") return res.status(405).json({ success: false, error: "Method not allowed" });
 
   const configured = process.env.SOUNDCLOUD_CLIENT_ID || process.env.SC_CLIENT_ID;

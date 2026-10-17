@@ -1,3 +1,4 @@
+import { rateLimit } from "../lib/ratelimit.js";
 // api/dl.js  (file BARU, tidak menggantikan apa pun)
 // Proxy byte-stream untuk unduhan offline: dipakai hanya kalau browser tidak bisa mengambil
 // segmen audio langsung dari CDN SoundCloud (CORS). Hanya host SoundCloud yang diizinkan.
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Range");
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (await rateLimit(req, res, { name: "dl", max: 120 })) return;
   if (!["GET", "HEAD"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
 
   const target = allowed(first(req.query.url));
