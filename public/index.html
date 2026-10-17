@@ -1007,7 +1007,7 @@ window.addEventListener("load", async () => {
 
 </div>
 
-<audio id="audioEngine" preload="auto" playsinline></audio>
+<audio id="audioEngine" preload="metadata" playsinline></audio>
 <script src="/audio.js"></script>
 
 <script>
@@ -1941,13 +1941,17 @@ function lyricPanelVisible() {
 
 function startLyricLoop() {
   if (lyricRaf) return;
+  // Sinkronisasi lirik cukup 20x/detik; menghindari kerja JS 60x/detik di HP.
   const frame = () => {
     lyricRaf = 0;
     if (audio.paused || document.hidden || !state.lyricLines.length || !lyricPanelVisible()) return;
     updateLyricHighlight();
-    if (!lyricRaf) lyricRaf = requestAnimationFrame(frame); // update bisa sudah mengaktifkan loop; jangan ganda
+    // updateLyricHighlight dapat memulai loop kembali; jangan jadwalkan loop ganda.
+    if (!lyricRaf && !audio.paused && !document.hidden && state.lyricLines.length && lyricPanelVisible()) {
+      lyricRaf = setTimeout(frame, 50);
+    }
   };
-  lyricRaf = requestAnimationFrame(frame);
+  lyricRaf = setTimeout(frame, 0);
 }
 
 // indeks terakhir dengan arr[i] <= x
@@ -2761,7 +2765,7 @@ function startChatPoll() {
     renderChat(_allMessages, true);
   }
   loadChat(true);
-  state.chatPollTimer = setInterval(loadChat, 3000);
+  state.chatPollTimer = setInterval(() => { if (!document.hidden) loadChat(); }, 8000);
 }
 
 function stopChatPoll() {
@@ -2772,6 +2776,8 @@ function stopChatPoll() {
 }
 
 async function loadChat(force) {
+  if (state._chatLoading) return;
+  state._chatLoading = true;
   try {
     const r = await fetch("/api/chat", { cache: "no-store" });
     const data = await r.json();
@@ -2797,6 +2803,8 @@ async function loadChat(force) {
       const cached = loadChatCache();
       if (cached.length) { _allMessages = cached; renderChat(cached, true); }
     }
+  } finally {
+    state._chatLoading = false;
   }
 }
 
